@@ -2,6 +2,9 @@ if ( CLIENT ) then return end
 
 AddCSLuaFile()
 AddCSLuaFile( "autorun/client/cl_zones.lua" )
+AddCSLuaFile( "autorun/sh_zones.lua" )
+
+include( "autorun/sh_zones.lua" )
 
 util.AddNetworkString( "ZoneTableUpdate" )
 
@@ -55,20 +58,23 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
                     npc = tobool( v.npc ) or false,
                     ent = tobool( v.ent ) or false,
                     removeprops = tobool( v.removeprops ) or false,
+					type = tonumber( data.type ) or TYPE_DAMAGE,
+					shape = tonumber( data.shape ) or SHAPE_BOX,
 					tick = tonumber( data.tick ) or 1,
 					amount = tonumber( data.amount ) or 1,
 					limit = tonumber( data.limit ) or 0,
-					type = tonumber( data.type ) or 1,
-					shape = tonumber( data.shape ) or 1,
                     r = tonumber( v.r ) or 255,
                     g = tonumber( v.g ) or 255,
                     b = tonumber( v.b ) or 255,
                     a = tonumber( v.a ) or 255
                 }
 				
-				timer.Create( "ZoneTimer_" .. v.id, tonumber( data.tick ) or 1, 0, function()
-					hook.Call( "ZoneTick", nil, v.id )
-				end )
+				local type = tonumber( data.type ) or TYPE_DAMAGE
+				if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
+					timer.Create( "ZoneTimer_" .. v.id, tonumber( data.tick ) or 1, 0, function()
+						hook.Call( "ZoneTick", nil, v.id )
+					end )
+				end
             end
         end
     end
@@ -97,7 +103,7 @@ end
 concommand.Add("zone_save", ZoneManager.SaveZones)
 
 --
--- Zone creation function
+-- Zone creation
 --
 
 function ZoneManager.CreateZone( identifier, data )
@@ -123,20 +129,23 @@ function ZoneManager.CreateZone( identifier, data )
         npc = tobool( data.npc ) or false,
         ent = tobool( data.ent ) or false,
         removeprops = tobool( data.removeprops ) or false,
+		type = tonumber( data.type ) or TYPE_DAMAGE,
+		shape = tonumber( data.shape ) or TYPE_HEAL,
 		tick = tonumber( data.tick ) or 1,
 		amount = tonumber( data.amount ) or 1,
 		limit = tonumber( data.limit ) or 0,
-		type = tonumber( data.type ) or 1,
-		shape = tonumber( data.shape ) or 1,
         r = tonumber( data.r ) or 255,
         g = tonumber( data.g ) or 255,
         b = tonumber( data.b ) or 255,
         a = tonumber( data.a ) or 255
     }
 	
-	timer.Create( "ZoneTimer_" .. identifier, tonumber( data.tick ) or 1, 0, function()
-		hook.Call( "ZoneTick", nil, identifier )
-	end )
+	local type = tonumber( data.type ) or TYPE_DAMAGE
+	if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
+		timer.Create( "ZoneTimer_" .. identifier, tonumber( data.tick ) or 1, 0, function()
+			hook.Call( "ZoneTick", nil, identifier )
+		end )
+	end
 end
 
 --
@@ -160,7 +169,10 @@ concommand.Add( "zone_remove", function( ply, cmd, args )
     if ( isstring( args[ 1 ] ) ) && ( ZoneManager.Zones[ args[ 1 ] ] ~= nil ) then
 		local zone = ZoneManager.Zones[ args[ 1 ] ]
 		ZoneManager.Zones[ args[ 1 ] ] = nil
-		timer.Remove( "ZoneTimer_" .. args[ 1 ] )
+		
+		if ( zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL ) then
+			timer.Remove( "ZoneTimer_" .. args[ 1 ] )
+		end
 		
 		if ( args[ 2 ] == nil ) then
 			undo.Create( "ZoneRemove" )
@@ -188,6 +200,7 @@ concommand.Add( "zone_remove", function( ply, cmd, args )
 				end, zone )
 				undo.SetPlayer( ply )
 			undo.Finish()
+			ply:PrintMessage( HUD_PRINTCENTER, "Successfully removed the zone with an identifier of: " .. args[ 1 ] )
 		end
 		
         print( "Successfully removed the zone with an identifier of: " .. args[ 1 ] )
@@ -202,18 +215,18 @@ end )
 
 hook.Add( "EntityTakeDamage", "ProWolf's Zone Tool Entity Take Damage", function( ent, info )
     for k, v in pairs( ZoneManager.Zones ) do
-		if ( v.type == 3 ) then
+		if ( v.type == TYPE_SAFE ) then
 			local zone
-			if ( v.shape == 1 ) then
+			if ( v.shape == SHAPE_BOX ) then
 				zone = ents.FindInBox( v.point1, v.point2 )
-			elseif ( v.shape == 2 ) then
+			elseif ( v.shape == SHAPE_SPHERE ) then
 				zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
 			end
 			if ( table.HasValue( zone, ent ) ) &&
-			( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
+			(( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
 			( v.admin && ent:IsPlayer() && ent:IsAdmin() ) ||
 			( v.npc && ent:IsNPC() ) ||
-			( v.ent && not ent:IsPlayer() && not ent:IsNPC()) then
+			( v.ent && not ent:IsPlayer() && not ent:IsNPC() ) ) then
 				info:SetDamage(0)
 			end
 		end
@@ -228,31 +241,28 @@ hook.Add( "ZoneTick", "ProWolf's Zone Tool Zone Tick", function( id )
 	if ZoneManager.Zones[ id ] ~= nil then
 		v = ZoneManager.Zones[ id ]
         local zone
-		if ( v.shape == 1 ) then
+		if ( v.shape == SHAPE_BOX ) then
 			zone = ents.FindInBox( v.point1, v.point2 )
-		elseif ( v.shape == 2 ) then
+		elseif ( v.shape == SHAPE_SPHERE ) then
 			zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
 		end
 		for k, ent in pairs(zone) do
-			if v.type == 1 &&
-			( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
+			if ( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
 			( v.admin && ent:IsPlayer() && ent:IsAdmin() ) ||
 			( v.npc && ent:IsNPC() ) ||
-			( v.ent && not ent:IsPlayer() && not ent:IsNPC()) then
-				if ( v.limit == 0 ) then
-					ent:TakeDamage( v.amount, nil, nil )
-				else
-					ent:TakeDamage( math.Clamp( ent:Health() - v.limit, 0, v.amount ), nil, nil )
-				end
-			elseif (v.type == 2) &&
-			( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
-			( v.admin && ent:IsPlayer() && ent:IsAdmin() ) ||
-			( v.npc && ent:IsNPC() ) ||
-			( v.ent && not ent:IsPlayer() && not ent:IsNPC()) then
-				if ( v.limit == 0 ) then
-					ent:SetHealth( ent:Health() + v.amount )
-				elseif ( ent:Health() < v.limit ) then
-					ent:SetHealth( math.min( ent:Health() + v.amount, v.limit ) )
+			( v.ent && not ent:IsPlayer() && not ent:IsNPC() ) then
+				if ( v.type == TYPE_DAMAGE ) then
+					if ( v.limit == 0 ) then
+						ent:TakeDamage( v.amount, nil, nil )
+					else
+						ent:TakeDamage( math.Clamp( ent:Health() - v.limit, 0, v.amount ), nil, nil )
+					end
+				elseif ( v.type == TYPE_HEAL ) then
+					if ( v.limit == 0 ) then
+						ent:SetHealth( ent:Health() + v.amount )
+					elseif ( ent:Health() < v.limit ) then
+						ent:SetHealth( math.min( ent:Health() + v.amount, v.limit ) )
+					end
 				end
 			end
 		end
@@ -271,9 +281,9 @@ hook.Add( "Think", "ProWolf's Zone Tool Prop Removal", function()
 
     for k, v in pairs( ZoneManager.Zones ) do
         local zone
-		if ( v.shape == 1 ) then
+		if ( v.shape == SHAPE_BOX ) then
 			zone = ents.FindInBox( v.point1, v.point2 )
-		elseif ( v.shape == 2 ) then
+		elseif ( v.shape == SHAPE_SPHERE ) then
 			zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
 		end
 		

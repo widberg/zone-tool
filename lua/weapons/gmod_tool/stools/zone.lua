@@ -15,8 +15,8 @@ TOOL.ClientConVar[ "removeprops" ] = "0"
 TOOL.ClientConVar[ "tick" ] = 1
 TOOL.ClientConVar[ "amount" ] = 1
 TOOL.ClientConVar[ "limit" ] = 0
-TOOL.ClientConVar[ "type" ] = 1
-TOOL.ClientConVar[ "shape" ] = 1
+TOOL.ClientConVar[ "type" ] = TYPE_DAMAGE
+TOOL.ClientConVar[ "shape" ] = SHAPE_BOX
 TOOL.ClientConVar[ "red" ] = 255
 TOOL.ClientConVar[ "green" ] = 255
 TOOL.ClientConVar[ "blue" ] = 255
@@ -28,10 +28,10 @@ TOOL.Point2 = nil
 TOOL.NextUse = CurTime()
 
 TOOL.Information = {
-	{ name = "left_box", op = 1 },
-	{ name = "right_box", op = 1 },
-	{ name = "left_sphere", op = 2 },
-	{ name = "right_sphere", op = 2 },
+	{ name = "left_box", op = SHAPE_BOX },
+	{ name = "right_box", op = SHAPE_BOX },
+	{ name = "left_sphere", op = SHAPE_SPHERE },
+	{ name = "right_sphere", op = SHAPE_SPHERE },
 	{ name = "reload" },
 	{ name = "use"}
 }
@@ -173,6 +173,10 @@ function TOOL:Think()
             a = self:GetClientNumber( "alpha" )
         } )
 		
+		if (zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL) && (self:GetClientNumber( "type" ) ~= TYPE_DAMAGE and self:GetClientNumber( "type" ) ~= TYPE_HEAL) then
+			timer.Remove( "ZoneTimer_" .. zone.id )
+		end
+		
 		undo.Create( "ZoneEdit" )
 			undo.AddFunction( function( tab, zone )
 				ZoneManager.CreateZone( zone.id, {
@@ -233,13 +237,13 @@ if ( CLIENT ) then
 		CPanel:AddControl( "ComboBox", { MenuButton = 1, Folder = "zone", Options = { [ "#preset.default" ] = ConVarsDefault }, CVars = table.GetKeys( ConVarsDefault ) } )
 		
 		if type == nil then
-			type = LocalPlayer():GetInfoNum( "zone_type", 1 )
+			type = LocalPlayer():GetInfoNum( "zone_type", TYPE_DAMAGE )
 		end
 		local type_panel = vgui.Create( "DComboBox", CPanel )
-		type_panel:AddChoice( "Damage", 1, type == 1 )
-		type_panel:AddChoice( "Heal", 2, type == 2 )
-		type_panel:AddChoice( "Safe", 3, type == 3 )
-		
+		type_panel:AddChoice( "Damage", TYPE_DAMAGE, type == TYPE_DAMAGE )
+		type_panel:AddChoice( "Heal", TYPE_HEAL, type == TYPE_HEAL )
+		type_panel:AddChoice( "Safe", TYPE_SAFE, type == TYPE_SAFE )
+		type_panel:AddChoice( "Useless", TYPE_USELESS, type == TYPE_USELESS )
 		type_panel.OnSelect = function( _, _, _, data )
 			RunConsoleCommand( "zone_type", data )
 			AddDefControls( CPanel, data )
@@ -247,11 +251,16 @@ if ( CLIENT ) then
 		
 		local shape = LocalPlayer():GetInfoNum( "zone_shape", 1 )
 		local shape_panel = vgui.Create( "DComboBox", CPanel )
-		shape_panel:AddChoice( "Box", 1, shape == 1 )
-		shape_panel:AddChoice( "Sphere", 2, shape == 2 )
-		
+		shape_panel:AddChoice( "Box", SHAPE_BOX, shape == SHAPE_BOX )
+		shape_panel:AddChoice( "Sphere", SHAPE_SPHERE, shape == SHAPE_SPHERE )
 		shape_panel.OnSelect = function( _, _, _, data )
 			RunConsoleCommand( "zone_shape", data )
+		end
+		
+		local remove_button = vgui.Create( "DButton", CPanel )
+		remove_button:SetText( "Remove this zone" )
+		remove_button.DoClick = function()
+			RunConsoleCommand( "zone_remove", LocalPlayer():GetInfo( "zone_id" ) )
 		end
 
         CPanel:Help( "The identifier of your zone, setting this to an already existing identifier will overwrite it." )
@@ -276,38 +285,32 @@ if ( CLIENT ) then
             Alpha = "zone_alpha"
         } )
 		
-		if ( type  == 1 || type == 2 ) then
+		if ( type  == TYPE_DAMAGE || type == TYPE_HEAL ) then
 			CPanel:AddControl( "slider", { label = "Tick interval (Seconds):", command = "zone_tick", min = 1, max = 60 } )
-			CPanel:AddControl( "slider", { label = type == 1 and "Damage Amount:" or "Heal Amount:", command = "zone_amount", min = 1, max = 100 } )
-			CPanel:AddControl( "slider", { label = type == 1 and "Min Health:" or "Max health(0 for no limit):", command = "zone_limit", min = 0, max = 200 } )
+			CPanel:AddControl( "slider", { label = type == TYPE_DAMAGE and "Damage Amount:" or "Heal Amount:", command = "zone_amount", min = 1, max = 100 } )
+			CPanel:AddControl( "slider", { label = type == TYPE_DAMAGE and "Min Health:" or "Max health(0 for no limit):", command = "zone_limit", min = 0, max = 200 } )
 		end
 
         CPanel:Help( "More Options:" )
 		
-		if type  == 1 then
+		if type  == TYPE_DAMAGE then
 			CPanel:CheckBox( "Damage Players", "zone_player" )
 			CPanel:CheckBox( "Damage Admins", "zone_admin" )
 			CPanel:CheckBox( "Damage NPCs", "zone_npc" )
 			CPanel:CheckBox( "Damage Entities", "zone_ent" )
-		elseif type == 2 then
+		elseif type == TYPE_HEAL then
 			CPanel:CheckBox( "Heal Players", "zone_player" )
 			CPanel:CheckBox( "Heal Admins", "zone_admin" )
 			CPanel:CheckBox( "Heal NPCs", "zone_npc" )
 			CPanel:CheckBox( "Heal Entities", "zone_ent" )
-		elseif type == 3 then
+		elseif type == TYPE_SAFE then
 			CPanel:CheckBox( "Protect Players", "zone_player" )
 			CPanel:CheckBox( "Protect Admins", "zone_admin" )
 			CPanel:CheckBox( "Protect NPCs", "zone_npc" )
-			CPanel:CheckBox( "Damage Entities", "zone_ent" )
+			CPanel:CheckBox( "Protect Entities", "zone_ent" )
 		end
 		
 		CPanel:CheckBox( "Remove Props", "zone_removeprops" )
-		
-		local remove_button = vgui.Create( "DButton", CPanel )
-		remove_button:SetText( "Remove this zone" )
-		remove_button.DoClick = function()
-			RunConsoleCommand( "zone_remove", LocalPlayer():GetInfo( "zone_id" ) )
-		end
 		
 		CPanel:AddPanel(remove_button)
 	end
