@@ -1,0 +1,17 @@
+{
+	"title"		:	"ProWolf's Zone Tool",
+	"type"		:	"tool",
+	"tags"		:	[ "roleplay", "build" ],
+	"description": "garrysmod addon to create zones that affect health.",
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*",
+		"*.txt",
+		".git*",
+		"README.md",
+		"zone.gma",
+		"*.jpg"
+	]
+}
