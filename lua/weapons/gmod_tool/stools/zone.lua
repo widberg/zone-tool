@@ -1,12 +1,12 @@
 include( "autorun/server/sv_zones.lua" )
 
-TOOL.Name = "#Tool.zone.name"
+TOOL.Name = "#tool.zone.name"
 TOOL.Category = "Construction"
 TOOL.Command = nil
 TOOL.ConfigName = ""
 
 TOOL.ClientConVar[ "id" ] = "Zone"
-TOOL.ClientConVar[ "filled" ] = "0"
+TOOL.ClientConVar[ "wireframe" ] = "0"
 TOOL.ClientConVar[ "player" ] = "0"
 TOOL.ClientConVar[ "admin" ] = "0"
 TOOL.ClientConVar[ "npc" ] = "0"
@@ -28,10 +28,12 @@ TOOL.Point2 = nil
 TOOL.NextUse = CurTime()
 
 TOOL.Information = {
-	{ name = "left_box", op = SHAPE_BOX },
-	{ name = "right_box", op = SHAPE_BOX },
-	{ name = "left_sphere", op = SHAPE_SPHERE },
-	{ name = "right_sphere", op = SHAPE_SPHERE },
+	{ name = "left_box", stage = 0, op = SHAPE_BOX },
+	{ name = "left_box", stage = 1, op = SHAPE_BOX },
+	{ name = "right_box", stage = 1, op = SHAPE_BOX },
+	{ name = "left_sphere", stage = 0, op = SHAPE_SPHERE },
+	{ name = "left_sphere", stage = 1, op = SHAPE_SPHERE },
+	{ name = "right_sphere", stage = 1, op = SHAPE_SPHERE },
 	{ name = "reload" },
 	{ name = "use"}
 }
@@ -41,7 +43,8 @@ local ConVarsDefault = TOOL:BuildConVarList()
 function TOOL:LeftClick( tr )
     -- Zone point marking
     self.Point1 = tr.HitPos
-    self:GetOwner():PrintMessage( HUD_PRINTCENTER, "First point has been marked at: " .. tostring( self.Point1 ) )
+	
+	self:SetStage( 1 )
 
     return true
 end
@@ -49,7 +52,6 @@ end
 function TOOL:RightClick( tr )
     -- Zone point marking
     self.Point2 = tr.HitPos
-    self:GetOwner():PrintMessage( HUD_PRINTCENTER, "Second point has been marked at: " .. tostring( self.Point2 ) )
 
     return true
 end
@@ -60,19 +62,19 @@ function TOOL:Reload( tr )
     local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
 
     if ( self.Point1 == nil ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "You haven't marked your first point." )
+        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.first" )
 
         return false
     end
 
     if ( self.Point2 == nil ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "You haven't marked your second point." )
+        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.second" )
 
         return false
     end
 
     if ( not isstring( self:GetClientInfo( "id" ) ) ) || ( self:GetClientInfo( "id" ) == "" ) || ( string.byte(self:GetClientInfo( "id" )) == 32 ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "Please type in a valid identifier." )
+        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.id" )
 
         return false
     end
@@ -81,7 +83,7 @@ function TOOL:Reload( tr )
         id = self:GetClientInfo( "id" ),
         point1 = self.Point1,
         point2 = self.Point2,
-		filled = self:GetClientNumber( "filled" ),
+		wireframe = self:GetClientNumber( "wireframe" ),
         player = self:GetClientNumber( "player" ),
         admin = self:GetClientNumber( "admin" ),
         npc = self:GetClientNumber( "npc" ),
@@ -112,7 +114,7 @@ function TOOL:Reload( tr )
 					id = zone.id,
 					point1 = zone.point1,
 					point2 = zone.point2,
-					filled = zone.filled,
+					wireframe = zone.wireframe,
 					player = zone.player,
 					admin = zone.admin,
 					npc = zone.npc,
@@ -133,9 +135,11 @@ function TOOL:Reload( tr )
 		undo.Finish()
 	end
 
-    owner:PrintMessage( HUD_PRINTCENTER, "Successfully created a zone!" )
+    owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.create" )
     self.Point1 = nil
     self.Point2 = nil
+	
+	self:SetStage( 0 )
 
     return true
 end
@@ -150,13 +154,13 @@ function TOOL:Think()
     local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
 
     if ( owner:KeyDown(IN_USE) && self.NextUse <= CurTime() ) then
-        if ( zone == nil ) then owner:PrintMessage( HUD_PRINTCENTER, "The zone that you are trying to modify is non-existent." ) return false end
+        if ( zone == nil ) then owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.exist" ) return false end
 
         ZoneManager.CreateZone( zone.id, {
             id = zone.id,
             point1 = zone.point1,
             point2 = zone.point2,
-			filled = self:GetClientNumber( "filled" ),
+			wireframe = self:GetClientNumber( "wireframe" ),
             player = self:GetClientNumber( "player" ),
             admin = self:GetClientNumber( "admin" ),
             npc = self:GetClientNumber( "npc" ),
@@ -173,17 +177,13 @@ function TOOL:Think()
             a = self:GetClientNumber( "alpha" )
         } )
 		
-		if (zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL) && (self:GetClientNumber( "type" ) ~= TYPE_DAMAGE and self:GetClientNumber( "type" ) ~= TYPE_HEAL) then
-			timer.Remove( "ZoneTimer_" .. zone.id )
-		end
-		
 		undo.Create( "ZoneEdit" )
 			undo.AddFunction( function( tab, zone )
 				ZoneManager.CreateZone( zone.id, {
 					id = zone.id,
 					point1 = zone.point1,
 					point2 = zone.point2,
-					filled = zone.filled,
+					wireframe = zone.wireframe,
 					player = zone.player,
 					admin = zone.admin,
 					npc = zone.npc,
@@ -203,7 +203,7 @@ function TOOL:Think()
 			undo.SetPlayer( owner )
 		undo.Finish()
 
-        owner:PrintMessage( HUD_PRINTCENTER, "Successfully edited the properties of the zone." )
+        owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.edit" )
 
         self.NextUse = CurTime() + 0.25
     end
@@ -213,107 +213,158 @@ function TOOL:Holster()
     -- Remove data on holster
     self.Point1 = nil
     self.Point2 = nil
+	
+	self:SetStage( 0 )
 
     return true
 end
 
 if ( CLIENT ) then
-	language.Add( "Tool.zone.name", "Zone" )
-    language.Add( "Tool.zone.desc", "Create a Zone" )
-    language.Add( "Tool.zone.left_box", "Mark the first point of the zone" )
-    language.Add( "Tool.zone.right_box", "Mark the second point of the zone" )
-	language.Add( "Tool.zone.left_sphere", "Mark the center of the zone" )
-    language.Add( "Tool.zone.right_sphere", "Mark the radius of the zone" )
-    language.Add( "Tool.zone.reload", "Finish zone creation" )
-    language.Add( "Tool.zone.use", "Replace a zone's properties" )
+	language.Add( "tool.zone.name", "Zone" )
+    language.Add( "tool.zone.desc", "Create a Zone" )
+    language.Add( "tool.zone.left_box", "Mark the first point of the zone" )
+    language.Add( "tool.zone.right_box", "Mark the second point of the zone" )
+	language.Add( "tool.zone.left_sphere", "Mark the center of the zone" )
+    language.Add( "tool.zone.right_sphere", "Mark the radius of the zone" )
+    language.Add( "tool.zone.reload", "Finish zone creation" )
+    language.Add( "tool.zone.use", "Replace a zone's properties" )
+	
+	language.Add( "zone.error.first", "You haven't marked your first point." )
+	language.Add( "zone.error.second", "You haven't marked your second point." )
+	language.Add( "zone.error.id", "Please type in a valid identifier." )
+	language.Add( "zone.error.exist", "The zone that you are trying to modify is non-existent." )
+	
+	language.Add( "zone.success.create", "Successfully created a zone!" )
+	language.Add( "zone.success.edit", "Successfully edited the properties of the zone!" )
+	
+	language.Add( "zone.option.description", "A zone affects the health of entities in it." )
+	language.Add( "zone.option.id.label", "Identifier:" )
+	language.Add( "zone.option.id.help", "The identifier of your zone, setting this to an already existing identifier will overwrite it." )
+	language.Add( "zone.option.type.label", "Type:" )
+	language.Add( "zone.option.type.damage", "Damage" )
+	language.Add( "zone.option.type.heal", "Heal" )
+	language.Add( "zone.option.type.safe", "Safe" )
+	language.Add( "zone.option.type.useless", "Useless" )
+	language.Add( "zone.option.shape.label", "Shape:" )
+	language.Add( "zone.option.shape.box", "Box" )
+	language.Add( "zone.option.shape.sphere", "Sphere" )
+	language.Add( "zone.option.wireframe", "Wireframe" )
+	language.Add( "zone.option.color.label", "Zone Color:" )
+	language.Add( "zone.option.tick.label", "Tick Interval:" )
+	language.Add( "zone.option.tick.help", "How often the zone will affect health. The tick interval is measured in seconds." )
+	language.Add( "zone.option.damage_amount", "Damage Amount:" )
+	language.Add( "zone.option.heal_amount", "Heal Amount:" )
+	language.Add( "zone.option.min_health", "Min Health:" )
+	language.Add( "zone.option.max_health", "Max Health:" )
+	language.Add( "zone.option.limit.help", "How much health the entity will have when the zone stops affecting it. Set to 0 for no limit." )
+	language.Add( "zone.option.more", "More Options:" )
+	language.Add( "zone.option.damage_players", "Damage Players" )
+	language.Add( "zone.option.damage_admins", "Damage Admins" )
+	language.Add( "zone.option.damage_npcs", "Damage NPCs" )
+	language.Add( "zone.option.damage_entities", "Damage Entities" )
+	language.Add( "zone.option.heal_players", "Heal Players" )
+	language.Add( "zone.option.heal_admins", "Heal Admins" )
+	language.Add( "zone.option.heal_npcs", "Heal NPCs" )
+	language.Add( "zone.option.heal_entities", "Heal Entities" )
+	language.Add( "zone.option.protect_players", "Protect Players" )
+	language.Add( "zone.option.protect_admins", "Protect Admins" )
+	language.Add( "zone.option.protect_npcs", "Protect NPCs" )
+	language.Add( "zone.option.protect_entities", "Protect Entities" )
+	language.Add( "zone.option.remove_props", "Remove Props" )
+	language.Add( "zone.option.remove", "Remove this zone" )
 	
 	language.Add( "Undone_ZoneCreate", "Undone Zone Create" )
 	language.Add( "Undone_ZoneEdit", "Undone Zone Edit" )
 	language.Add( "Undone_ZoneRemove", "Undone Zone Remove" )
 
-	local function AddDefControls( CPanel, type )
+	local function AddDefControls( CPanel )
 		CPanel:ClearControls()
 		
-		CPanel:AddControl( "ComboBox", { MenuButton = 1, Folder = "zone", Options = { [ "#preset.default" ] = ConVarsDefault }, CVars = table.GetKeys( ConVarsDefault ) } )
+		-- Header
+		CPanel:Help( "#zone.option.description" )
 		
-		if type == nil then
-			type = LocalPlayer():GetInfoNum( "zone_type", TYPE_DAMAGE )
+		-- Preset
+		local preset_panel = vgui.Create( "ControlPresets", CPanel )
+		preset_panel:SetPreset( "zone" )
+		preset_panel:AddOption( "#preset.default", ConVarsDefault )
+		for k, v in pairs( ConVarsDefault ) do
+			preset_panel:AddConVar( k )
 		end
-		local type_panel = vgui.Create( "DComboBox", CPanel )
-		type_panel:AddChoice( "Damage", TYPE_DAMAGE, type == TYPE_DAMAGE )
-		type_panel:AddChoice( "Heal", TYPE_HEAL, type == TYPE_HEAL )
-		type_panel:AddChoice( "Safe", TYPE_SAFE, type == TYPE_SAFE )
-		type_panel:AddChoice( "Useless", TYPE_USELESS, type == TYPE_USELESS )
-		type_panel.OnSelect = function( _, _, _, data )
-			RunConsoleCommand( "zone_type", data )
-			AddDefControls( CPanel, data )
-		end
+		CPanel:AddPanel( preset_panel )
 		
-		local shape = LocalPlayer():GetInfoNum( "zone_shape", 1 )
-		local shape_panel = vgui.Create( "DComboBox", CPanel )
-		shape_panel:AddChoice( "Box", SHAPE_BOX, shape == SHAPE_BOX )
-		shape_panel:AddChoice( "Sphere", SHAPE_SPHERE, shape == SHAPE_SPHERE )
-		shape_panel.OnSelect = function( _, _, _, data )
-			RunConsoleCommand( "zone_shape", data )
-		end
+		-- Identifier
+		CPanel:TextEntry( "#zone.option.id.label", "zone_id" )
+		CPanel:ControlHelp( "#zone.option.id.help" )
 		
-		local remove_button = vgui.Create( "DButton", CPanel )
-		remove_button:SetText( "Remove this zone" )
-		remove_button.DoClick = function()
-			RunConsoleCommand( "zone_remove", LocalPlayer():GetInfo( "zone_id" ) )
-		end
-
-        CPanel:Help( "The identifier of your zone, setting this to an already existing identifier will overwrite it." )
-		CPanel:AddControl( "TextBox", { 
-            Label = "Zone Identifier:",
-            Command = "zone_id" 
-        } )
+		-- Type
+		local type = LocalPlayer():GetInfoNum( "zone_type", TYPE_DAMAGE )
+		local type_combobox = CPanel:ComboBox( "#zone.option.type.label", "zone_type" )
+		type_combobox:AddChoice( "#zone.option.type.damage", TYPE_DAMAGE, type == TYPE_DAMAGE )
+		type_combobox:AddChoice( "#zone.option.type.heal", TYPE_HEAL, type == TYPE_HEAL )
+		type_combobox:AddChoice( "#zone.option.type.safe", TYPE_SAFE, type == TYPE_SAFE )
+		type_combobox:AddChoice( "#zone.option.type.useless", TYPE_USELESS, type == TYPE_USELESS )
 		
-		CPanel:Help( "The type of your zone:" )
-        CPanel:AddPanel(type_panel)
+		-- Shape
+		local shape = LocalPlayer():GetInfoNum( "zone_shape", SHAPE_BOX )
+		local shape_combobox = CPanel:ComboBox( "#zone.option.shape.label", "zone_shape" )
+		shape_combobox:AddChoice( "#zone.option.shape.box", SHAPE_BOX, shape == SHAPE_BOX )
+		shape_combobox:AddChoice( "#zone.option.shape.sphere", SHAPE_SPHERE, shape == SHAPE_SPHERE )
 		
-		CPanel:Help( "The shape of your zone:" )
-        CPanel:AddPanel(shape_panel)
+		-- Wireframe
+		CPanel:CheckBox( "#zone.option.wireframe", "zone_wireframe" )
 		
-		CPanel:CheckBox( "Filled", "zone_filled" )
-
-        CPanel:AddControl( "Color", {
-            Label = "Zone color:",
-            Red = "zone_red",
-            Green = "zone_green",
-            Blue = "zone_blue",
-            Alpha = "zone_alpha"
-        } )
+		-- Color
+		local mixer = vgui.Create( "DColorMixer", CPanel )
+		mixer:SetLabel( "#zone.option.color.label" )
+		mixer:SetConVarR( "zone_red" )
+		mixer:SetConVarG( "zone_green" )
+		mixer:SetConVarB( "zone_blue" )
+		mixer:SetConVarA( "zone_alpha" )
+		CPanel:AddItem( mixer )
 		
+		-- Sliders
 		if ( type  == TYPE_DAMAGE || type == TYPE_HEAL ) then
-			CPanel:AddControl( "slider", { label = "Tick interval (Seconds):", command = "zone_tick", min = 1, max = 60 } )
-			CPanel:AddControl( "slider", { label = type == TYPE_DAMAGE and "Damage Amount:" or "Heal Amount:", command = "zone_amount", min = 1, max = 100 } )
-			CPanel:AddControl( "slider", { label = type == TYPE_DAMAGE and "Min Health:" or "Max health(0 for no limit):", command = "zone_limit", min = 0, max = 200 } )
+			CPanel:NumSlider( "#zone.option.tick.label", "zone_tick", 1, 60, 0 )
+			CPanel:ControlHelp( "#zone.option.tick.help" )
+			CPanel:NumSlider( type == TYPE_DAMAGE and "#zone.option.damage_amount" or "#zone.option.heal_amount", "zone_amount", 1, 100, 0 )
+			CPanel:NumSlider( type == TYPE_DAMAGE and "#zone.option.min_health" or "#zone.option.max_health", "zone_limit", 0, 200, 0 )
+			CPanel:ControlHelp( "#zone.option.limit.help" )
 		end
-
-        CPanel:Help( "More Options:" )
 		
+		CPanel:Help( "#zone.option.more" )
+		
+		-- Groups
 		if type  == TYPE_DAMAGE then
-			CPanel:CheckBox( "Damage Players", "zone_player" )
-			CPanel:CheckBox( "Damage Admins", "zone_admin" )
-			CPanel:CheckBox( "Damage NPCs", "zone_npc" )
-			CPanel:CheckBox( "Damage Entities", "zone_ent" )
+			CPanel:CheckBox( "#zone.option.damage_players", "zone_player" )
+			CPanel:CheckBox( "#zone.option.damage_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.damage_npcs", "zone_npc" )
+			CPanel:CheckBox( "#zone.option.damage_entities", "zone_ent" )
 		elseif type == TYPE_HEAL then
-			CPanel:CheckBox( "Heal Players", "zone_player" )
-			CPanel:CheckBox( "Heal Admins", "zone_admin" )
-			CPanel:CheckBox( "Heal NPCs", "zone_npc" )
-			CPanel:CheckBox( "Heal Entities", "zone_ent" )
+			CPanel:CheckBox( "#zone.option.heal_players", "zone_player" )
+			CPanel:CheckBox( "#zone.option.heal_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.heal_npcs", "zone_npc" )
+			CPanel:CheckBox( "#zone.option.heal_entities", "zone_ent" )
 		elseif type == TYPE_SAFE then
-			CPanel:CheckBox( "Protect Players", "zone_player" )
-			CPanel:CheckBox( "Protect Admins", "zone_admin" )
-			CPanel:CheckBox( "Protect NPCs", "zone_npc" )
-			CPanel:CheckBox( "Protect Entities", "zone_ent" )
+			CPanel:CheckBox( "#zone.option.protect_players", "zone_player" )
+			CPanel:CheckBox( "#zone.option.protect_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.protect_npcs", "zone_npc" )
+			CPanel:CheckBox( "#zone.option.protect_entities", "zone_ent" )
 		end
 		
-		CPanel:CheckBox( "Remove Props", "zone_removeprops" )
+		-- Remove Props
+		CPanel:CheckBox( "#zone.option.remove_props", "zone_removeprops" )
 		
-		CPanel:AddPanel(remove_button)
+		-- Remove Zone
+		CPanel:Button( "#zone.option.remove", "zone_remove", LocalPlayer():GetInfo( "zone_id" ) )
 	end
+	
+	hook.Add( "InitPostEntity", "ProWolf's Zone Tool Init Post Entity", function()
+		cvars.AddChangeCallback( "zone_type", function()
+			local CPanel = controlpanel.Get( "zone" )
+			if (!CPanel) then return end
+			AddDefControls( CPanel )
+		end )
+	end )
 	
 	function TOOL.BuildCPanel( CPanel )
         AddDefControls( CPanel )

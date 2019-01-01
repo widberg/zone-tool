@@ -52,17 +52,17 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
                     id = v.id or "Zone",
                     point1 = v.point1 or Vector( 0, 0, 0 ),
                     point2 = v.point2 or Vector( 0, 0, 0 ),
-					filled = tobool( data.filled ) or false,
+					wireframe = tobool( data.wireframe ) or false,
                     player = tobool( v.player ) or false,
                     admin = tobool( v.admin ) or false,
                     npc = tobool( v.npc ) or false,
                     ent = tobool( v.ent ) or false,
                     removeprops = tobool( v.removeprops ) or false,
-					type = tonumber( data.type ) or TYPE_DAMAGE,
-					shape = tonumber( data.shape ) or SHAPE_BOX,
 					tick = tonumber( data.tick ) or 1,
 					amount = tonumber( data.amount ) or 1,
 					limit = tonumber( data.limit ) or 0,
+					type = tonumber( data.type ) or TYPE_DAMAGE,
+					shape = tonumber( data.shape ) or SHAPE_BOX,
                     r = tonumber( v.r ) or 255,
                     g = tonumber( v.g ) or 255,
                     b = tonumber( v.b ) or 255,
@@ -118,22 +118,24 @@ function ZoneManager.CreateZone( identifier, data )
 
         return
     end
-
+	
+	local zone = ZoneManager.Zones[ identifier ]
+	
     ZoneManager.Zones[ identifier ] = {
         id = identifier,
         point1 = data.point1 or Vector( 0, 0, 0 ),
         point2 = data.point2 or Vector( 0, 0, 0 ),
-		filled = tobool( data.filled ) or false,
+		wireframe = tobool( data.wireframe ) or false,
         player = tobool( data.player ) or false,
         admin = tobool( data.admin ) or false,
         npc = tobool( data.npc ) or false,
         ent = tobool( data.ent ) or false,
         removeprops = tobool( data.removeprops ) or false,
-		type = tonumber( data.type ) or TYPE_DAMAGE,
-		shape = tonumber( data.shape ) or TYPE_HEAL,
 		tick = tonumber( data.tick ) or 1,
 		amount = tonumber( data.amount ) or 1,
 		limit = tonumber( data.limit ) or 0,
+		type = tonumber( data.type ) or TYPE_DAMAGE,
+		shape = tonumber( data.shape ) or TYPE_HEAL,
         r = tonumber( data.r ) or 255,
         g = tonumber( data.g ) or 255,
         b = tonumber( data.b ) or 255,
@@ -145,6 +147,8 @@ function ZoneManager.CreateZone( identifier, data )
 		timer.Create( "ZoneTimer_" .. identifier, tonumber( data.tick ) or 1, 0, function()
 			hook.Call( "ZoneTick", nil, identifier )
 		end )
+	elseif ( zone ~= nil && ( zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL) ) then
+			timer.Remove( "ZoneTimer_" .. zone.id )
 	end
 end
 
@@ -181,7 +185,7 @@ concommand.Add( "zone_remove", function( ply, cmd, args )
 						id = zone.id,
 						point1 = zone.point1,
 						point2 = zone.point2,
-						filled = zone.filled,
+						wireframe = zone.wireframe,
 						player = zone.player,
 						admin = zone.admin,
 						npc = zone.npc,
@@ -200,9 +204,7 @@ concommand.Add( "zone_remove", function( ply, cmd, args )
 				end, zone )
 				undo.SetPlayer( ply )
 			undo.Finish()
-			ply:PrintMessage( HUD_PRINTCENTER, "Successfully removed the zone with an identifier of: " .. args[ 1 ] )
 		end
-		
         print( "Successfully removed the zone with an identifier of: " .. args[ 1 ] )
     else
         print( "That isn't a valid zone identifier." )

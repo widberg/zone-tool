@@ -17,18 +17,18 @@ hook.Add( "PostDrawTranslucentRenderables", "ProWolf's Zone Tool Draw Zones", fu
 		render.SetMaterial(zone_material)
 		
 		if ( v.shape == SHAPE_BOX) then
-			if ( v.filled ) then
-				render.DrawBox( Vector( 0, 0, 0), Angle( 0, 0, 0 ), v.point2, v.point1, col, true )
-			else
+			if ( v.wireframe ) then
 				render.DrawWireframeBox( Vector( 0, 0, 0), Angle( 0, 0, 0 ), v.point1, v.point2, col, true )
+			else
+				render.DrawBox( Vector( 0, 0, 0), Angle( 0, 0, 0 ), v.point2, v.point1, col, true )
 			end
 		elseif ( v.shape == SHAPE_SPHERE) then
 			local radius = v.point1:Distance(v.point2)
 			local detail = math.Clamp(radius/10, 15, 50)
-			if ( v.filled ) then
-				render.DrawSphere( v.point1, radius, detail, detail, col, true )
+			if ( v.wireframe ) then
+				render.DrawWireframeSphere( v.point1, radius, detail, detail, col, true )
 			else
-				render.DrawWireframeSphere( v.point1, radius, detail, detail, col, true ) 
+				render.DrawSphere( v.point1, radius, detail, detail, col, true )
 			end
 		end
     end
