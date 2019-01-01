@@ -3,17 +3,17 @@ include( "autorun/sh_zones.lua" )
 local Zones = Zones or {}
 
 net.Receive( "ZoneTableUpdate", function()
-    Zones = net.ReadTable()
+	Zones = net.ReadTable()
 end )
 
 local zone_material = Material("zt/zone")
 
 hook.Add( "PostDrawTranslucentRenderables", "ProWolf's Zone Tool Draw Zones", function()
-    for k, v in pairs( Zones ) do
-        if ( v == nil ) then return end
+	for k, v in pairs( Zones ) do
+		if ( v == nil ) then return end
 
-        local col = Color( v.r, v.g, v.b, v.a )
-        
+		local col = Color( v.r, v.g, v.b, v.a )
+		
 		render.SetMaterial(zone_material)
 		
 		if ( v.shape == SHAPE_BOX) then
@@ -31,5 +31,5 @@ hook.Add( "PostDrawTranslucentRenderables", "ProWolf's Zone Tool Draw Zones", fu
 				render.DrawSphere( v.point1, radius, detail, detail, col, true )
 			end
 		end
-    end
+	end
 end )

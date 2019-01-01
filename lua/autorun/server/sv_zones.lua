@@ -23,51 +23,51 @@ local path
 
 -- Different zones for singleplayer and multiplayer games.
 if ( game.SinglePlayer() ) then
-    path = "zones/" .. game.GetMap() .. ".txt"
+	path = "zones/" .. game.GetMap() .. ".txt"
 else
-    path = "zones/" .. game.GetMap() .. "_server" .. ".txt"
+	path = "zones/" .. game.GetMap() .. "_server" .. ".txt"
 end
 
 hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
-    if ( !file.IsDir( "zones", "DATA" ) ) then
-        file.CreateDir( "zones" )
+	if ( !file.IsDir( "zones", "DATA" ) ) then
+		file.CreateDir( "zones" )
 
-        print( "Creating a zones folder.." )
-    end
+		print( "Creating a zones folder.." )
+	end
 
-    if ( !file.Exists( path, "DATA" ) ) then
-        file.Write( path, "{}" )
+	if ( !file.Exists( path, "DATA" ) ) then
+		file.Write( path, "{}" )
 
-        print( "Creating zone data file.." )
-    end
+		print( "Creating zone data file.." )
+	end
 
-    local data = util.JSONToTable( file.Read( path, "DATA" ) or "" )
+	local data = util.JSONToTable( file.Read( path, "DATA" ) or "" )
 
-    if ( data ) then
-        ZoneManager.Zones = {}
+	if ( data ) then
+		ZoneManager.Zones = {}
 
-        for k, v in pairs( data ) do
-            if ( k ~= nil ) then
-                ZoneManager.Zones[ k or "Zone" ] = {
-                    id = k or "Zone",
-                    point1 = v.point1 or Vector( 0, 0, 0 ),
-                    point2 = v.point2 or Vector( 0, 0, 0 ),
+		for k, v in pairs( data ) do
+			if ( k ~= nil ) then
+				ZoneManager.Zones[ k or "Zone" ] = {
+					id = k or "Zone",
+					point1 = v.point1 or Vector( 0, 0, 0 ),
+					point2 = v.point2 or Vector( 0, 0, 0 ),
 					wireframe = tobool( v.wireframe ) or false,
-                    player = tobool( v.player ) or false,
-                    admin = tobool( v.admin ) or false,
-                    npc = tobool( v.npc ) or false,
-                    ent = tobool( v.ent ) or false,
-                    removeprops = tobool( v.removeprops ) or false,
+					player = tobool( v.player ) or false,
+					admin = tobool( v.admin ) or false,
+					npc = tobool( v.npc ) or false,
+					ent = tobool( v.ent ) or false,
+					removeprops = tobool( v.removeprops ) or false,
 					tick = tonumber( v.tick ) or 1,
 					amount = tonumber( v.amount ) or 1,
 					limit = tonumber( v.limit ) or 0,
 					type = tonumber( v.type ) or TYPE_DAMAGE,
 					shape = tonumber( v.shape ) or SHAPE_BOX,
-                    r = tonumber( v.r ) or 255,
-                    g = tonumber( v.g ) or 255,
-                    b = tonumber( v.b ) or 255,
-                    a = tonumber( v.a ) or 255
-                }
+					r = tonumber( v.r ) or 255,
+					g = tonumber( v.g ) or 255,
+					b = tonumber( v.b ) or 255,
+					a = tonumber( v.a ) or 255
+				}
 				
 				local type = tonumber( v.type ) or TYPE_DAMAGE
 				if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
@@ -75,9 +75,9 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
 						hook.Call( "ZoneTick", nil, v.id )
 					end )
 				end
-            end
-        end
-    end
+			end
+		end
+	end
 
 	if ( table.Count( ZoneManager.Zones ) > 0 ) then
 		print( "Zones loaded for map: " .. game.GetMap() .. "!" )
@@ -89,15 +89,15 @@ end )
 --
 
 concommand.Add("zone_save", function( ply )
-    if ( !ply:IsSuperAdmin() ) then return ply:ChatPrint( "You do not have permission to use this command!" ) end
+	if ( !ply:IsSuperAdmin() ) then return ply:ChatPrint( "You do not have permission to use this command!" ) end
 
 	file.Write( path, util.TableToJSON( ZoneManager.Zones ) )
 
-    if ( table.Count( ZoneManager.Zones ) == 1 ) then
-        print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zone!" )
-    else
-        print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zones!" )
-    end
+	if ( table.Count( ZoneManager.Zones ) == 1 ) then
+		print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zone!" )
+	else
+		print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zones!" )
+	end
 end )
 
 --
@@ -105,40 +105,40 @@ end )
 --
 
 function ZoneManager.CreateZone( identifier, data )
-    if ( identifier == nil || not isstring( identifier ) || identifier == "" ) then
-        error( "Failed creating a zone! Identifier isn't valid!" )
+	if ( identifier == nil || not isstring( identifier ) || identifier == "" ) then
+		error( "Failed creating a zone! Identifier isn't valid!" )
 
-        return
-    end
+		return
+	end
 
-    if ( not isvector( data.point1 ) || not isvector( data.point2 ) ) then
-        error( "Failed creating a zone! One of your points isn't valid!" )
+	if ( not isvector( data.point1 ) || not isvector( data.point2 ) ) then
+		error( "Failed creating a zone! One of your points isn't valid!" )
 
-        return
-    end
+		return
+	end
 	
 	local zone = ZoneManager.Zones[ identifier ]
 	
-    ZoneManager.Zones[ identifier ] = {
-        id = identifier,
-        point1 = data.point1 or Vector( 0, 0, 0 ),
-        point2 = data.point2 or Vector( 0, 0, 0 ),
+	ZoneManager.Zones[ identifier ] = {
+		id = identifier,
+		point1 = data.point1 or Vector( 0, 0, 0 ),
+		point2 = data.point2 or Vector( 0, 0, 0 ),
 		wireframe = tobool( data.wireframe ) or false,
-        player = tobool( data.player ) or false,
-        admin = tobool( data.admin ) or false,
-        npc = tobool( data.npc ) or false,
-        ent = tobool( data.ent ) or false,
-        removeprops = tobool( data.removeprops ) or false,
+		player = tobool( data.player ) or false,
+		admin = tobool( data.admin ) or false,
+		npc = tobool( data.npc ) or false,
+		ent = tobool( data.ent ) or false,
+		removeprops = tobool( data.removeprops ) or false,
 		tick = tonumber( data.tick ) or 1,
 		amount = tonumber( data.amount ) or 1,
 		limit = tonumber( data.limit ) or 0,
 		type = tonumber( data.type ) or TYPE_DAMAGE,
 		shape = tonumber( data.shape ) or SHAPE_BOX,
-        r = tonumber( data.r ) or 255,
-        g = tonumber( data.g ) or 255,
-        b = tonumber( data.b ) or 255,
-        a = tonumber( data.a ) or 255
-    }
+		r = tonumber( data.r ) or 255,
+		g = tonumber( data.g ) or 255,
+		b = tonumber( data.b ) or 255,
+		a = tonumber( data.a ) or 255
+	}
 	
 	local type = tonumber( data.type ) or TYPE_DAMAGE
 	if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
@@ -155,10 +155,10 @@ end
 --
 
 concommand.Add( "zone_list", function( ply, cmd, args )
-    if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
-    if ( table.Count( ZoneManager.Zones ) <= 0 ) then print( "There are no zones." ) return end
+	if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
+	if ( table.Count( ZoneManager.Zones ) <= 0 ) then print( "There are no zones." ) return end
 
-    PrintTable( ZoneManager.Zones )
+	PrintTable( ZoneManager.Zones )
 end )
 
 --
@@ -167,7 +167,7 @@ end )
 
 function ZoneManager.RemoveZone( identifier )
 	local zone = ZoneManager.Zones[ identifier ]
-    if ( isstring( identifier ) ) && ( zone ~= nil ) then
+	if ( isstring( identifier ) ) && ( zone ~= nil ) then
 		ZoneManager.Zones[ identifier ] = nil
 		
 		if ( zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL ) then
@@ -175,10 +175,10 @@ function ZoneManager.RemoveZone( identifier )
 		end
 		
 		return true
-    else
-        print( "That isn't a valid zone identifier." )
+	else
+		print( "That isn't a valid zone identifier." )
 		return false
-    end
+	end
 end
 
 concommand.Add( "zone_remove", function( ply, cmd, args )
@@ -219,7 +219,7 @@ end )
 --
 
 hook.Add( "EntityTakeDamage", "ProWolf's Zone Tool Entity Take Damage", function( ent, info )
-    for k, v in pairs( ZoneManager.Zones ) do
+	for k, v in pairs( ZoneManager.Zones ) do
 		if ( v.type == TYPE_SAFE ) then
 			local zone
 			if ( v.shape == SHAPE_BOX ) then
@@ -235,7 +235,7 @@ hook.Add( "EntityTakeDamage", "ProWolf's Zone Tool Entity Take Damage", function
 				info:SetDamage(0)
 			end
 		end
-    end
+	end
 end )
 
 --
@@ -245,7 +245,7 @@ end )
 hook.Add( "ZoneTick", "ProWolf's Zone Tool Zone Tick", function( id )
 	if ZoneManager.Zones[ id ] ~= nil then
 		v = ZoneManager.Zones[ id ]
-        local zone
+		local zone
 		if ( v.shape == SHAPE_BOX ) then
 			zone = ents.FindInBox( v.point1, v.point2 )
 		elseif ( v.shape == SHAPE_SPHERE ) then
@@ -271,7 +271,7 @@ hook.Add( "ZoneTick", "ProWolf's Zone Tool Zone Tick", function( id )
 				end
 			end
 		end
-    end
+	end
 end )
 
 --
@@ -279,25 +279,25 @@ end )
 --
 
 hook.Add( "Think", "ProWolf's Zone Tool Prop Removal", function()
-    -- Used to update the client's data.
-    net.Start( "ZoneTableUpdate" )
-        net.WriteTable( ZoneManager.Zones )
-    net.Broadcast()
+	-- Used to update the client's data.
+	net.Start( "ZoneTableUpdate" )
+		net.WriteTable( ZoneManager.Zones )
+	net.Broadcast()
 
-    for k, v in pairs( ZoneManager.Zones ) do
-        local zone
+	for k, v in pairs( ZoneManager.Zones ) do
+		local zone
 		if ( v.shape == SHAPE_BOX ) then
 			zone = ents.FindInBox( v.point1, v.point2 )
 		elseif ( v.shape == SHAPE_SPHERE ) then
 			zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
 		end
 		
-        if ( v.removeprops ) then
-            for k, x in pairs( zone ) do
-                if ( x:GetClass() == "prop_physics" ) then
-                    x:Remove()
-                end
-            end
-        end
-    end
+		if ( v.removeprops ) then
+			for k, x in pairs( zone ) do
+				if ( x:GetClass() == "prop_physics" ) then
+					x:Remove()
+				end
+			end
+		end
+	end
 end )

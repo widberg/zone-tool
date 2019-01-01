@@ -41,64 +41,64 @@ TOOL.Information = {
 local ConVarsDefault = TOOL:BuildConVarList()
 
 function TOOL:LeftClick( tr )
-    -- Zone point marking
-    self.Point1 = tr.HitPos
+	-- Zone point marking
+	self.Point1 = tr.HitPos
 	
 	self:SetStage( 1 )
 
-    return true
+	return true
 end
 	
 function TOOL:RightClick( tr )
-    -- Zone point marking
-    self.Point2 = tr.HitPos
+	-- Zone point marking
+	self.Point2 = tr.HitPos
 
-    return true
+	return true
 end
 
 function TOOL:Reload( tr )
-    -- Zone creation
-    local owner = self:GetOwner()
-    local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
+	-- Zone creation
+	local owner = self:GetOwner()
+	local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
 
-    if ( self.Point1 == nil ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.first" )
+	if ( self.Point1 == nil ) then
+		owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.first" )
 
-        return false
-    end
+		return false
+	end
 
-    if ( self.Point2 == nil ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.second" )
+	if ( self.Point2 == nil ) then
+		owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.second" )
 
-        return false
-    end
+		return false
+	end
 
-    if ( not isstring( self:GetClientInfo( "id" ) ) ) || ( self:GetClientInfo( "id" ) == "" ) || ( string.byte(self:GetClientInfo( "id" )) == 32 ) then
-        owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.id" )
+	if ( not isstring( self:GetClientInfo( "id" ) ) ) || ( self:GetClientInfo( "id" ) == "" ) || ( string.byte(self:GetClientInfo( "id" )) == 32 ) then
+		owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.id" )
 
-        return false
-    end
+		return false
+	end
 
 	ZoneManager.CreateZone( self:GetClientInfo( "id" ), {
-        id = self:GetClientInfo( "id" ),
-        point1 = self.Point1,
-        point2 = self.Point2,
+		id = self:GetClientInfo( "id" ),
+		point1 = self.Point1,
+		point2 = self.Point2,
 		wireframe = self:GetClientNumber( "wireframe" ),
-        player = self:GetClientNumber( "player" ),
-        admin = self:GetClientNumber( "admin" ),
-        npc = self:GetClientNumber( "npc" ),
-        ent = self:GetClientNumber( "ent" ),
-        removeprops = self:GetClientNumber( "removeprops" ),
+		player = self:GetClientNumber( "player" ),
+		admin = self:GetClientNumber( "admin" ),
+		npc = self:GetClientNumber( "npc" ),
+		ent = self:GetClientNumber( "ent" ),
+		removeprops = self:GetClientNumber( "removeprops" ),
 		tick = self:GetClientNumber( "tick" ),
 		amount = self:GetClientNumber( "amount" ),
 		limit = self:GetClientNumber( "limit" ),
 		type = self:GetClientNumber( "type" ),
 		shape = self:GetClientNumber( "shape" ),
-        r = self:GetClientNumber( "red" ),
-        g = self:GetClientNumber( "green" ),
-        b = self:GetClientNumber( "blue" ),
-        a = self:GetClientNumber( "alpha" )
-    } )
+		r = self:GetClientNumber( "red" ),
+		g = self:GetClientNumber( "green" ),
+		b = self:GetClientNumber( "blue" ),
+		a = self:GetClientNumber( "alpha" )
+	} )
 	
 	if (zone == nil) then
 		undo.Create( "ZoneCreate" )
@@ -135,47 +135,47 @@ function TOOL:Reload( tr )
 		undo.Finish()
 	end
 
-    owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.create" )
-    self.Point1 = nil
-    self.Point2 = nil
+	owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.create" )
+	self.Point1 = nil
+	self.Point2 = nil
 	
 	self:SetStage( 0 )
 
-    return true
+	return true
 end
 
 function TOOL:Think()
-    -- Existing zone modification
-    if ( CLIENT ) then return end
+	-- Existing zone modification
+	if ( CLIENT ) then return end
 	
 	self:SetOperation( self:GetClientNumber( "shape" ) )
 
-    local owner = self:GetOwner()
-    local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
+	local owner = self:GetOwner()
+	local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
 
-    if ( owner:KeyDown(IN_USE) && self.NextUse <= CurTime() ) then
-        if ( zone == nil ) then owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.exist" ) return false end
+	if ( owner:KeyDown(IN_USE) && self.NextUse <= CurTime() ) then
+		if ( zone == nil ) then owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.exist" ) return false end
 
-        ZoneManager.CreateZone( zone.id, {
-            id = zone.id,
-            point1 = zone.point1,
-            point2 = zone.point2,
+		ZoneManager.CreateZone( zone.id, {
+			id = zone.id,
+			point1 = zone.point1,
+			point2 = zone.point2,
 			wireframe = self:GetClientNumber( "wireframe" ),
-            player = self:GetClientNumber( "player" ),
-            admin = self:GetClientNumber( "admin" ),
-            npc = self:GetClientNumber( "npc" ),
-            ent = self:GetClientNumber( "ent" ),
-            removeprops = self:GetClientNumber( "removeprops" ),
+			player = self:GetClientNumber( "player" ),
+			admin = self:GetClientNumber( "admin" ),
+			npc = self:GetClientNumber( "npc" ),
+			ent = self:GetClientNumber( "ent" ),
+			removeprops = self:GetClientNumber( "removeprops" ),
 			tick = self:GetClientNumber( "tick" ),
 			amount = self:GetClientNumber( "amount" ),
 			limit = self:GetClientNumber( "limit" ),
 			type = self:GetClientNumber( "type" ),
 			shape = self:GetClientNumber( "shape" ),
-            r = self:GetClientNumber( "red" ),
-            g = self:GetClientNumber( "green" ),
-            b = self:GetClientNumber( "blue" ),
-            a = self:GetClientNumber( "alpha" )
-        } )
+			r = self:GetClientNumber( "red" ),
+			g = self:GetClientNumber( "green" ),
+			b = self:GetClientNumber( "blue" ),
+			a = self:GetClientNumber( "alpha" )
+		} )
 		
 		undo.Create( "ZoneEdit" )
 			undo.AddFunction( function( tab, zone )
@@ -203,31 +203,31 @@ function TOOL:Think()
 			undo.SetPlayer( owner )
 		undo.Finish()
 
-        owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.edit" )
+		owner:PrintMessage( HUD_PRINTCENTER, "#zone.success.edit" )
 
-        self.NextUse = CurTime() + 0.25
-    end
+		self.NextUse = CurTime() + 0.25
+	end
 end
 
 function TOOL:Holster()
-    -- Remove data on holster
-    self.Point1 = nil
-    self.Point2 = nil
+	-- Remove data on holster
+	self.Point1 = nil
+	self.Point2 = nil
 	
 	self:SetStage( 0 )
 
-    return true
+	return true
 end
 
 if ( CLIENT ) then
 	language.Add( "tool.zone.name", "Zone" )
-    language.Add( "tool.zone.desc", "Create a Zone" )
-    language.Add( "tool.zone.left_box", "Mark the first point of the zone" )
-    language.Add( "tool.zone.right_box", "Mark the second point of the zone" )
+	language.Add( "tool.zone.desc", "Create a Zone" )
+	language.Add( "tool.zone.left_box", "Mark the first point of the zone" )
+	language.Add( "tool.zone.right_box", "Mark the second point of the zone" )
 	language.Add( "tool.zone.left_sphere", "Mark the center of the zone" )
-    language.Add( "tool.zone.right_sphere", "Mark the radius of the zone" )
-    language.Add( "tool.zone.reload", "Finish zone creation" )
-    language.Add( "tool.zone.use", "Replace a zone's properties" )
+	language.Add( "tool.zone.right_sphere", "Mark the radius of the zone" )
+	language.Add( "tool.zone.reload", "Finish zone creation" )
+	language.Add( "tool.zone.use", "Replace a zone's properties" )
 	
 	language.Add( "zone.error.first", "You haven't marked your first point." )
 	language.Add( "zone.error.second", "You haven't marked your second point." )
@@ -371,6 +371,6 @@ if ( CLIENT ) then
 	end )
 	
 	function TOOL.BuildCPanel( CPanel )
-        AddDefControls( CPanel )
-    end
+		AddDefControls( CPanel )
+	end
 end
