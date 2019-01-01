@@ -103,7 +103,7 @@ function TOOL:Reload( tr )
 	if (zone == nil) then
 		undo.Create( "ZoneCreate" )
 			undo.AddFunction( function( tab, id )
-				RunConsoleCommand( "zone_remove", id, "true" )
+				ZoneManager.RemoveZone( id )
 			end, self:GetClientInfo( "id" ) )
 			undo.SetPlayer( owner )
 		undo.Finish()
@@ -236,6 +236,7 @@ if ( CLIENT ) then
 	
 	language.Add( "zone.success.create", "Successfully created a zone!" )
 	language.Add( "zone.success.edit", "Successfully edited the properties of the zone!" )
+	language.Add( "zone.success.remove", "Successfully removed a zone!" )
 	
 	language.Add( "zone.option.description", "A zone affects the health of entities in it." )
 	language.Add( "zone.option.id.label", "Identifier:" )
@@ -355,7 +356,10 @@ if ( CLIENT ) then
 		CPanel:CheckBox( "#zone.option.remove_props", "zone_removeprops" )
 		
 		-- Remove Zone
-		CPanel:Button( "#zone.option.remove", "zone_remove", LocalPlayer():GetInfo( "zone_id" ) )
+		local remove_button = CPanel:Button( "#zone.option.remove" )
+		remove_button.DoClick = function()
+			RunConsoleCommand( "zone_remove", GetConVar( "zone_id" ):GetString() )
+		end
 	end
 	
 	hook.Add( "InitPostEntity", "ProWolf's Zone Tool Init Post Entity", function()

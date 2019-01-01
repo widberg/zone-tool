@@ -23,9 +23,9 @@ local path
 
 -- Different zones for singleplayer and multiplayer games.
 if ( game.SinglePlayer() ) then
-    path = "prowolf/zones/" .. game.GetMap() .. ".txt"
+    path = "zones/" .. game.GetMap() .. ".txt"
 else
-    path = "prowolf/zones/" .. game.GetMap() .. "_server" .. ".txt"
+    path = "zones/" .. game.GetMap() .. "_server" .. ".txt"
 end
 
 hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
@@ -47,31 +47,31 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
         ZoneManager.Zones = {}
 
         for k, v in pairs( data ) do
-            if ( v.id ~= nil ) then
-                ZoneManager.Zones[ v.id ] = {
-                    id = v.id or "Zone",
+            if ( k ~= nil ) then
+                ZoneManager.Zones[ k or "Zone" ] = {
+                    id = k or "Zone",
                     point1 = v.point1 or Vector( 0, 0, 0 ),
                     point2 = v.point2 or Vector( 0, 0, 0 ),
-					wireframe = tobool( data.wireframe ) or false,
+					wireframe = tobool( v.wireframe ) or false,
                     player = tobool( v.player ) or false,
                     admin = tobool( v.admin ) or false,
                     npc = tobool( v.npc ) or false,
                     ent = tobool( v.ent ) or false,
                     removeprops = tobool( v.removeprops ) or false,
-					tick = tonumber( data.tick ) or 1,
-					amount = tonumber( data.amount ) or 1,
-					limit = tonumber( data.limit ) or 0,
-					type = tonumber( data.type ) or TYPE_DAMAGE,
-					shape = tonumber( data.shape ) or SHAPE_BOX,
+					tick = tonumber( v.tick ) or 1,
+					amount = tonumber( v.amount ) or 1,
+					limit = tonumber( v.limit ) or 0,
+					type = tonumber( v.type ) or TYPE_DAMAGE,
+					shape = tonumber( v.shape ) or SHAPE_BOX,
                     r = tonumber( v.r ) or 255,
                     g = tonumber( v.g ) or 255,
                     b = tonumber( v.b ) or 255,
                     a = tonumber( v.a ) or 255
                 }
 				
-				local type = tonumber( data.type ) or TYPE_DAMAGE
+				local type = tonumber( v.type ) or TYPE_DAMAGE
 				if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
-					timer.Create( "ZoneTimer_" .. v.id, tonumber( data.tick ) or 1, 0, function()
+					timer.Create( "ZoneTimer_" .. v.id, tonumber( v.tick ) or 1, 0, function()
 						hook.Call( "ZoneTick", nil, v.id )
 					end )
 				end
@@ -88,19 +88,17 @@ end )
 -- Zone saving
 --
 
-function ZoneManager.SaveZones( ply )
+concommand.Add("zone_save", function( ply )
     if ( !ply:IsSuperAdmin() ) then return ply:ChatPrint( "You do not have permission to use this command!" ) end
-    if ( table.Count( ZoneManager.Zones ) <= 0 ) then return print( "There are no zones to save." ) end
 
 	file.Write( path, util.TableToJSON( ZoneManager.Zones ) )
 
-    if ( table.Count( ZoneManager.Zones ) > 1 ) then
-        print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zones!" )
-    else
+    if ( table.Count( ZoneManager.Zones ) == 1 ) then
         print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zone!" )
+    else
+        print( "Successfully saved " .. table.Count( ZoneManager.Zones ) .. " zones!" )
     end
-end
-concommand.Add("zone_save", ZoneManager.SaveZones)
+end )
 
 --
 -- Zone creation
@@ -135,7 +133,7 @@ function ZoneManager.CreateZone( identifier, data )
 		amount = tonumber( data.amount ) or 1,
 		limit = tonumber( data.limit ) or 0,
 		type = tonumber( data.type ) or TYPE_DAMAGE,
-		shape = tonumber( data.shape ) or TYPE_HEAL,
+		shape = tonumber( data.shape ) or SHAPE_BOX,
         r = tonumber( data.r ) or 255,
         g = tonumber( data.g ) or 255,
         b = tonumber( data.b ) or 255,
@@ -167,48 +165,53 @@ end )
 -- Zone removal
 --
 
-concommand.Add( "zone_remove", function( ply, cmd, args )
-    if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
-
-    if ( isstring( args[ 1 ] ) ) && ( ZoneManager.Zones[ args[ 1 ] ] ~= nil ) then
-		local zone = ZoneManager.Zones[ args[ 1 ] ]
-		ZoneManager.Zones[ args[ 1 ] ] = nil
+function ZoneManager.RemoveZone( identifier )
+	local zone = ZoneManager.Zones[ identifier ]
+    if ( isstring( identifier ) ) && ( zone ~= nil ) then
+		ZoneManager.Zones[ identifier ] = nil
 		
 		if ( zone.type == TYPE_DAMAGE || zone.type == TYPE_HEAL ) then
-			timer.Remove( "ZoneTimer_" .. args[ 1 ] )
+			timer.Remove( "ZoneTimer_" .. identifier )
 		end
 		
-		if ( args[ 2 ] == nil ) then
-			undo.Create( "ZoneRemove" )
-				undo.AddFunction( function( tab, zone )
-					ZoneManager.CreateZone( zone.id, {
-						id = zone.id,
-						point1 = zone.point1,
-						point2 = zone.point2,
-						wireframe = zone.wireframe,
-						player = zone.player,
-						admin = zone.admin,
-						npc = zone.npc,
-						ent = zone.ent,
-						removeprops = zone.removeprops,
-						tick = zone.tick,
-						amount = zone.amount,
-						limit = zone.limit,
-						type = zone.type,
-						shape = zone.shape,
-						r = zone.r,
-						g = zone.g,
-						b = zone.b,
-						a = zone.a
-					} )
-				end, zone )
-				undo.SetPlayer( ply )
-			undo.Finish()
-		end
-        print( "Successfully removed the zone with an identifier of: " .. args[ 1 ] )
+		return true
     else
         print( "That isn't a valid zone identifier." )
-    end 
+		return false
+    end
+end
+
+concommand.Add( "zone_remove", function( ply, cmd, args )
+	if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
+	local zone = ZoneManager.Zones[ args[ 1 ] ]
+	if ( ZoneManager.RemoveZone( args[ 1 ] ) ) then
+		undo.Create( "ZoneRemove" )
+			undo.AddFunction( function( tab, zone )
+				ZoneManager.CreateZone( zone.id, {
+					id = zone.id,
+					point1 = zone.point1,
+					point2 = zone.point2,
+					wireframe = zone.wireframe,
+					player = zone.player,
+					admin = zone.admin,
+					npc = zone.npc,
+					ent = zone.ent,
+					removeprops = zone.removeprops,
+					tick = zone.tick,
+					amount = zone.amount,
+					limit = zone.limit,
+					type = zone.type,
+					shape = zone.shape,
+					r = zone.r,
+					g = zone.g,
+					b = zone.b,
+					a = zone.a
+				} )
+			end, zone )
+			undo.SetPlayer( ply )
+		undo.Finish()
+		ply:PrintMessage( HUD_PRINTCENTER, "#zone.success.remove" )
+	end
 end )
 
 --
