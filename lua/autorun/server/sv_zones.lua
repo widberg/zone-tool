@@ -89,7 +89,7 @@ end )
 --
 
 concommand.Add("zone_save", function( ply )
-	if ( !ply:IsSuperAdmin() ) then return ply:ChatPrint( "You do not have permission to use this command!" ) end
+	if ( !ply:IsSuperAdmin() ) then ply:ChatPrint( "You do not have permission to use this command!" ) return end
 
 	file.Write( path, util.TableToJSON( ZoneManager.Zones ) )
 
@@ -293,9 +293,9 @@ hook.Add( "Think", "ProWolf's Zone Tool Prop Removal", function()
 		end
 		
 		if ( v.removeprops ) then
-			for k, x in pairs( zone ) do
-				if ( x:GetClass() == "prop_physics" ) then
-					x:Remove()
+			for x, y in pairs( zone ) do
+				if ( y:GetClass() == "prop_physics" ) then
+					y:Remove()
 				end
 			end
 		end

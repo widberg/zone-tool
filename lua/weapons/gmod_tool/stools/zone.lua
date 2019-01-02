@@ -58,8 +58,9 @@ end
 
 function TOOL:Reload( tr )
 	-- Zone creation
+	local identifier = self:GetClientInfo( "id" )
 	local owner = self:GetOwner()
-	local zone = ZoneManager.Zones[self:GetClientInfo( "id" )]
+	local zone = ZoneManager.Zones[ identifier ]
 
 	if ( self.Point1 == nil ) then
 		owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.first" )
@@ -73,14 +74,14 @@ function TOOL:Reload( tr )
 		return false
 	end
 
-	if ( not isstring( self:GetClientInfo( "id" ) ) ) || ( self:GetClientInfo( "id" ) == "" ) || ( string.byte(self:GetClientInfo( "id" )) == 32 ) then
+	if ( not isstring( identifier ) ) || ( identifier == "" ) || ( string.byte( identifier ) == 32 ) then
 		owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.id" )
 
 		return false
 	end
 
-	ZoneManager.CreateZone( self:GetClientInfo( "id" ), {
-		id = self:GetClientInfo( "id" ),
+	ZoneManager.CreateZone( identifier, {
+		id = identifier,
 		point1 = self.Point1,
 		point2 = self.Point2,
 		wireframe = self:GetClientNumber( "wireframe" ),
@@ -104,7 +105,7 @@ function TOOL:Reload( tr )
 		undo.Create( "ZoneCreate" )
 			undo.AddFunction( function( tab, id )
 				ZoneManager.RemoveZone( id )
-			end, self:GetClientInfo( "id" ) )
+			end, identifier )
 			undo.SetPlayer( owner )
 		undo.Finish()
 	else
@@ -358,7 +359,7 @@ if ( CLIENT ) then
 		-- Remove Zone
 		local remove_button = CPanel:Button( "#zone.option.remove" )
 		remove_button.DoClick = function()
-			RunConsoleCommand( "zone_remove", GetConVar( "zone_id" ):GetString() )
+			RunConsoleCommand( "zone_remove", LocalPlayer():GetInfo( "zone_id", "Zone" ) )
 		end
 	end
 	
