@@ -52,13 +52,7 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
 		print( "Creating a zones folder.." )
 	end
 
-	if ( !file.Exists( path, "DATA" ) ) then
-		file.Write( path, "{}" )
-
-		print( "Creating zone data file.." )
-	end
-
-	local data = util.JSONToTable( file.Read( path, "DATA" ) or "{}" )
+	local data = util.JSONToTable( file.Read( path, "DATA" ) or "[]" )
 
 	if ( data ) then
 		ZoneManager.Zones = {}

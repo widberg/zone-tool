@@ -1,9 +1,8 @@
 {
-	"title"		 :	"ProWolf's Zone Tool",
-	"type"		 :	"tool",
-	"tags"		 :	[ "roleplay", "build" ],
-	"description": "Tool to create zones that affect health.",
-	"ignore"	 :
+	"title"		:	"ProWolf's Zone Tool",
+	"type"		:	"tool",
+	"tags"		:	[ "roleplay", "build" ],
+	"ignore"	:
 	[
 		"*.psd",
 		"*.vcproj",

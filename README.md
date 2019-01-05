@@ -1,6 +1,6 @@
 A tool which allows you to easily create zones that affect health.
 
-This addon is a heavily modified version of [url=https://steamcommunity.com/sharedfiles/filedetails/?id=1547155435]Ced's Scalezones[/url]. All credit for base code goes to Ced.
+This addon is a heavily modified version of [url=https://steamcommunity.com/sharedfiles/filedetails/?id=1547155435]Ced's Safezones[/url]. All credit for base code goes to Ced.
 
 [h1]Features:[/h1]
 [list]
@@ -18,10 +18,10 @@ This addon is a heavily modified version of [url=https://steamcommunity.com/shar
 
 [h1]Zone Types:[/h1]
 [list]
-[*][b]Damage[/b] - Damages the selected groups by the set amount once per the set tick interval. The entity will stop being damaged once its health is less than or equal to "Min Health".
-[*][b]Heal[/b] - Heals the selected groups by the set amount once per the set tick interval. The entity will stop being healed once its health is greater than or equal to "Max Health".
-[*][b]Scale[/b] - Scales the damage taken by entities in the zone.
-[*][b]Useless[/b] - Will be rendered and remove props if selected, but does not affect health.
+[*][b]Damage[/b] - Damages the selected groups by the set amount once per the set tick interval. The entity will stop being damaged once its health is less than or equal to "Min Health"
+[*][b]Heal[/b] - Heals the selected groups by the set amount once per the set tick interval. The entity will stop being healed once its health is greater than or equal to "Max Health"
+[*][b]Scale[/b] - Scales the damage taken by entities in the zone
+[*][b]Useless[/b] - Will be rendered and remove props if selected, but does not affect health
 [/list]
 
 [h1]Zone Shapes:[/h1]
@@ -42,9 +42,9 @@ This addon is a heavily modified version of [url=https://steamcommunity.com/shar
 
 [h1]Commands:[/h1] (Available to superadmins and anyone with the zone tool)
 [list]
-[*][b]zone_list[/b] - Shows a list of all the zones.
-[*][b]zone_remove[/b] - Removes a given zone by its identifier.
-[*][b]zone_save[/b] - Saves all the current zones.
+[*][b]zone_list[/b] - Shows a list of all the zones
+[*][b]zone_remove[/b] - Removes a given zone by its identifier
+[*][b]zone_save[/b] - Saves all the current zones
 [/list]
 
 I am open to feature requests. If you find any bugs please report them in the comments below.
