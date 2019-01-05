@@ -16,6 +16,23 @@ ZoneManager = ZoneManager or {}
 ZoneManager.Zones = ZoneManager.Zones or {}
 
 --
+-- Utility Functions
+--
+
+local function affects( zone, ent )
+	return ( ( zone.player && ent:IsPlayer() && not ent:IsAdmin() && not ent:IsBot() ) ||
+		( zone.admin && ent:IsPlayer() && ent:IsAdmin() && not ent:IsSuperAdmin() ) ||
+		( zone.superadmin && ent:IsPlayer() && ent:IsAdmin() && ent:IsSuperAdmin() ) ||
+		( zone.bot && ent:IsPlayer() && ent:IsBot() ) ||
+		( zone.npc && ent:IsNPC() ) ||
+		( zone.ent && not ent:IsPlayer() && not ent:IsNPC() ) )
+end
+
+local function permission( ply )
+	return ply:IsSuperAdmin() || ply:GetTool( "zone" ) ~= nil
+end
+
+--
 -- Data Initialization
 --
 
@@ -23,14 +40,14 @@ local path
 
 -- Different zones for singleplayer and multiplayer games.
 if ( game.SinglePlayer() ) then
-	path = "zones/" .. game.GetMap() .. ".txt"
+	path = "prowolf/zones/" .. game.GetMap() .. ".txt"
 else
-	path = "zones/" .. game.GetMap() .. "_server" .. ".txt"
+	path = "prowolf/zones/" .. game.GetMap() .. "_server" .. ".txt"
 end
 
 hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
-	if ( !file.IsDir( "zones", "DATA" ) ) then
-		file.CreateDir( "zones" )
+	if ( !file.IsDir( "prowolf/zones", "DATA" ) ) then
+		file.CreateDir( "prowolf/zones" )
 
 		print( "Creating a zones folder.." )
 	end
@@ -41,38 +58,40 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
 		print( "Creating zone data file.." )
 	end
 
-	local data = util.JSONToTable( file.Read( path, "DATA" ) or "" )
+	local data = util.JSONToTable( file.Read( path, "DATA" ) or "{}" )
 
 	if ( data ) then
 		ZoneManager.Zones = {}
 
-		for k, v in pairs( data ) do
-			if ( k ~= nil ) then
-				ZoneManager.Zones[ k or "Zone" ] = {
-					id = k or "Zone",
-					point1 = v.point1 or Vector( 0, 0, 0 ),
-					point2 = v.point2 or Vector( 0, 0, 0 ),
-					wireframe = tobool( v.wireframe ) or false,
-					player = tobool( v.player ) or false,
-					admin = tobool( v.admin ) or false,
-					npc = tobool( v.npc ) or false,
-					ent = tobool( v.ent ) or false,
-					removeprops = tobool( v.removeprops ) or false,
-					tick = tonumber( v.tick ) or 1,
-					amount = tonumber( v.amount ) or 1,
-					limit = tonumber( v.limit ) or 0,
-					type = tonumber( v.type ) or TYPE_DAMAGE,
-					shape = tonumber( v.shape ) or SHAPE_BOX,
-					r = tonumber( v.r ) or 255,
-					g = tonumber( v.g ) or 255,
-					b = tonumber( v.b ) or 255,
-					a = tonumber( v.a ) or 255
+		for identifier, zone in pairs( data ) do
+			if ( identifier ~= nil ) then
+				ZoneManager.Zones[ identifier or "Zone" ] = {
+					id = identifier or "Zone",
+					point1 = zone.point1 or Vector( 0, 0, 0 ),
+					point2 = zone.point2 or Vector( 0, 0, 0 ),
+					wireframe = tobool( zone.wireframe ) or false,
+					player = tobool( zone.player ) or false,
+					admin = tobool( zone.admin ) or false,
+					superadmin = tobool( zone.superadmin ) or false,
+					bot = tobool( zone.bot ) or false,
+					npc = tobool( zone.npc ) or false,
+					ent = tobool( zone.ent ) or false,
+					removeprops = tobool( zone.removeprops ) or false,
+					tick = tonumber( zone.tick ) or 1,
+					amount = tonumber( zone.amount ) or 1,
+					limit = tonumber( zone.limit ) or 0,
+					type = tonumber( zone.type ) or TYPE_DAMAGE,
+					shape = tonumber( zone.shape ) or SHAPE_BOX,
+					r = tonumber( zone.r ) or 255,
+					g = tonumber( zone.g ) or 255,
+					b = tonumber( zone.b ) or 255,
+					a = tonumber( zone.a ) or 255
 				}
 				
-				local type = tonumber( v.type ) or TYPE_DAMAGE
+				local type = tonumber( zone.type ) or TYPE_DAMAGE
 				if ( type == TYPE_DAMAGE || type == TYPE_HEAL ) then
-					timer.Create( "ZoneTimer_" .. v.id, tonumber( v.tick ) or 1, 0, function()
-						hook.Call( "ZoneTick", nil, v.id )
+					timer.Create( "ZoneTimer_" .. zone.id, tonumber( zone.tick ) or 1, 0, function()
+						hook.Call( "ZoneTick", nil, zone.id )
 					end )
 				end
 			end
@@ -89,7 +108,7 @@ end )
 --
 
 concommand.Add("zone_save", function( ply )
-	if ( !ply:IsSuperAdmin() ) then ply:ChatPrint( "You do not have permission to use this command!" ) return end
+	if ( !permission( ply ) ) then ply:PrintMessage( HUD_PRINTCONSOLE, "You do not have permission to use this command!" ) return end
 
 	file.Write( path, util.TableToJSON( ZoneManager.Zones ) )
 
@@ -126,6 +145,8 @@ function ZoneManager.CreateZone( identifier, data )
 		wireframe = tobool( data.wireframe ) or false,
 		player = tobool( data.player ) or false,
 		admin = tobool( data.admin ) or false,
+		superadmin = tobool( data.superadmin ) or false,
+		bot = tobool( data.bot ) or false,
 		npc = tobool( data.npc ) or false,
 		ent = tobool( data.ent ) or false,
 		removeprops = tobool( data.removeprops ) or false,
@@ -155,7 +176,7 @@ end
 --
 
 concommand.Add( "zone_list", function( ply, cmd, args )
-	if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
+	if ( !permission( ply ) ) then ply:PrintMessage( HUD_PRINTCONSOLE, "You do not have permission to use this command!" ) return end
 	if ( table.Count( ZoneManager.Zones ) <= 0 ) then print( "There are no zones." ) return end
 
 	PrintTable( ZoneManager.Zones )
@@ -182,31 +203,12 @@ function ZoneManager.RemoveZone( identifier )
 end
 
 concommand.Add( "zone_remove", function( ply, cmd, args )
-	if ( !ply:IsSuperAdmin() ) then print( "You do not have permission to use this command!" ) return end
+	if ( !permission( ply ) ) then ply:PrintMessage( HUD_PRINTCONSOLE, "You do not have permission to use this command!" ) return end
 	local zone = ZoneManager.Zones[ args[ 1 ] ]
 	if ( ZoneManager.RemoveZone( args[ 1 ] ) ) then
 		undo.Create( "ZoneRemove" )
 			undo.AddFunction( function( tab, zone )
-				ZoneManager.CreateZone( zone.id, {
-					id = zone.id,
-					point1 = zone.point1,
-					point2 = zone.point2,
-					wireframe = zone.wireframe,
-					player = zone.player,
-					admin = zone.admin,
-					npc = zone.npc,
-					ent = zone.ent,
-					removeprops = zone.removeprops,
-					tick = zone.tick,
-					amount = zone.amount,
-					limit = zone.limit,
-					type = zone.type,
-					shape = zone.shape,
-					r = zone.r,
-					g = zone.g,
-					b = zone.b,
-					a = zone.a
-				} )
+				ZoneManager.CreateZone( zone.id, zone )
 			end, zone )
 			undo.SetPlayer( ply )
 		undo.Finish()
@@ -215,24 +217,20 @@ concommand.Add( "zone_remove", function( ply, cmd, args )
 end )
 
 --
--- Safezone protection
+-- Scalezone
 --
 
-hook.Add( "EntityTakeDamage", "ProWolf's Zone Tool Entity Take Damage", function( ent, info )
-	for k, v in pairs( ZoneManager.Zones ) do
-		if ( v.type == TYPE_SAFE ) then
-			local zone
-			if ( v.shape == SHAPE_BOX ) then
-				zone = ents.FindInBox( v.point1, v.point2 )
-			elseif ( v.shape == SHAPE_SPHERE ) then
-				zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
+hook.Add( "EntityTakeDamage", "ProWolf's Zone Tool Entity Take Damage", function( ent, dmginfo )
+	for _, zone in pairs( ZoneManager.Zones ) do
+		if ( zone.type == TYPE_SCALE ) then
+			local entities
+			if ( zone.shape == SHAPE_BOX ) then
+				entities = ents.FindInBox( zone.point1, zone.point2 )
+			elseif ( zone.shape == SHAPE_SPHERE ) then
+				entities = ents.FindInSphere( zone.point1, zone.point1:Distance(zone.point2) )
 			end
-			if ( table.HasValue( zone, ent ) ) &&
-			(( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
-			( v.admin && ent:IsPlayer() && ent:IsAdmin() ) ||
-			( v.npc && ent:IsNPC() ) ||
-			( v.ent && not ent:IsPlayer() && not ent:IsNPC() ) ) then
-				info:SetDamage(0)
+			if ( table.HasValue( entities, ent ) && affects( zone, ent ) ) then
+				dmginfo:ScaleDamage( zone.amount )
 			end
 		end
 	end
@@ -244,29 +242,26 @@ end )
 
 hook.Add( "ZoneTick", "ProWolf's Zone Tool Zone Tick", function( id )
 	if ZoneManager.Zones[ id ] ~= nil then
-		v = ZoneManager.Zones[ id ]
-		local zone
-		if ( v.shape == SHAPE_BOX ) then
-			zone = ents.FindInBox( v.point1, v.point2 )
-		elseif ( v.shape == SHAPE_SPHERE ) then
-			zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
+		zone = ZoneManager.Zones[ id ]
+		local entities
+		if ( zone.shape == SHAPE_BOX ) then
+			entities = ents.FindInBox( zone.point1, zone.point2 )
+		elseif ( zone.shape == SHAPE_SPHERE ) then
+			entities = ents.FindInSphere( zone.point1, zone.point1:Distance( zone.point2 ) )
 		end
-		for k, ent in pairs(zone) do
-			if ( v.player && ent:IsPlayer() && not ent:IsAdmin() ) ||
-			( v.admin && ent:IsPlayer() && ent:IsAdmin() ) ||
-			( v.npc && ent:IsNPC() ) ||
-			( v.ent && not ent:IsPlayer() && not ent:IsNPC() ) then
-				if ( v.type == TYPE_DAMAGE ) then
-					if ( v.limit == 0 ) then
-						ent:TakeDamage( v.amount, nil, nil )
+		for _, ent in pairs( entities ) do
+			if ( affects( zone, ent ) ) then
+				if ( zone.type == TYPE_DAMAGE ) then
+					if ( zone.limit == 0 ) then
+						ent:TakeDamage( zone.amount, nil, nil )
 					else
-						ent:TakeDamage( math.Clamp( ent:Health() - v.limit, 0, v.amount ), nil, nil )
+						ent:TakeDamage( math.Clamp( ent:Health() - zone.limit, 0, zone.amount ), nil, nil )
 					end
-				elseif ( v.type == TYPE_HEAL ) then
-					if ( v.limit == 0 ) then
-						ent:SetHealth( ent:Health() + v.amount )
-					elseif ( ent:Health() < v.limit ) then
-						ent:SetHealth( math.min( ent:Health() + v.amount, v.limit ) )
+				elseif ( zone.type == TYPE_HEAL ) then
+					if ( zone.limit == 0 ) then
+						ent:SetHealth( ent:Health() + zone.amount )
+					elseif ( ent:Health() < zone.limit ) then
+						ent:SetHealth( math.min( ent:Health() + zone.amount, zone.limit ) )
 					end
 				end
 			end
@@ -284,18 +279,18 @@ hook.Add( "Think", "ProWolf's Zone Tool Prop Removal", function()
 		net.WriteTable( ZoneManager.Zones )
 	net.Broadcast()
 
-	for k, v in pairs( ZoneManager.Zones ) do
-		local zone
-		if ( v.shape == SHAPE_BOX ) then
-			zone = ents.FindInBox( v.point1, v.point2 )
-		elseif ( v.shape == SHAPE_SPHERE ) then
-			zone = ents.FindInSphere( v.point1, v.point1:Distance(v.point2) )
+	for _, zone in pairs( ZoneManager.Zones ) do
+		local entities
+		if ( zone.shape == SHAPE_BOX ) then
+			entities = ents.FindInBox( zone.point1, zone.point2 )
+		elseif ( zone.shape == SHAPE_SPHERE ) then
+			entities = ents.FindInSphere( zone.point1, zone.point1:Distance( zone.point2 ) )
 		end
 		
-		if ( v.removeprops ) then
-			for x, y in pairs( zone ) do
-				if ( y:GetClass() == "prop_physics" ) then
-					y:Remove()
+		if ( zone.removeprops ) then
+			for _, ent in pairs( entities ) do
+				if ( ent:GetClass() == "prop_physics" ) then
+					ent:Remove()
 				end
 			end
 		end

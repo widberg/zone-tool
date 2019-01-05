@@ -1,7 +1,7 @@
 -- Type Enum
 TYPE_DAMAGE = 1
 TYPE_HEAL = 2
-TYPE_SAFE = 3
+TYPE_SCALE = 3
 TYPE_USELESS = 4
 
 -- Shape Enum

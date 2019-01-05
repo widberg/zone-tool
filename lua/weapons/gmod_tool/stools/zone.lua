@@ -9,6 +9,8 @@ TOOL.ClientConVar[ "id" ] = "Zone"
 TOOL.ClientConVar[ "wireframe" ] = "0"
 TOOL.ClientConVar[ "player" ] = "0"
 TOOL.ClientConVar[ "admin" ] = "0"
+TOOL.ClientConVar[ "superadmin" ] = "0"
+TOOL.ClientConVar[ "bot" ] = "0"
 TOOL.ClientConVar[ "npc" ] = "0"
 TOOL.ClientConVar[ "ent" ] = "0"
 TOOL.ClientConVar[ "removeprops" ] = "0"
@@ -87,6 +89,8 @@ function TOOL:Reload( tr )
 		wireframe = self:GetClientNumber( "wireframe" ),
 		player = self:GetClientNumber( "player" ),
 		admin = self:GetClientNumber( "admin" ),
+		superadmin = self:GetClientNumber( "superadmin" ),
+		bot = self:GetClientNumber( "bot" ),
 		npc = self:GetClientNumber( "npc" ),
 		ent = self:GetClientNumber( "ent" ),
 		removeprops = self:GetClientNumber( "removeprops" ),
@@ -111,26 +115,7 @@ function TOOL:Reload( tr )
 	else
 		undo.Create( "ZoneCreate" )
 			undo.AddFunction( function( tab, zone )
-				ZoneManager.CreateZone( zone.id, {
-					id = zone.id,
-					point1 = zone.point1,
-					point2 = zone.point2,
-					wireframe = zone.wireframe,
-					player = zone.player,
-					admin = zone.admin,
-					npc = zone.npc,
-					ent = zone.ent,
-					removeprops = zone.removeprops,
-					tick = zone.tick,
-					amount = zone.amount,
-					limit = zone.limit,
-					type = zone.type,
-					shape = zone.shape,
-					r = zone.r,
-					g = zone.g,
-					b = zone.b,
-					a = zone.a
-				} )
+				ZoneManager.CreateZone( zone.id, zone )
 			end, zone )
 			undo.SetPlayer( owner )
 		undo.Finish()
@@ -164,6 +149,8 @@ function TOOL:Think()
 			wireframe = self:GetClientNumber( "wireframe" ),
 			player = self:GetClientNumber( "player" ),
 			admin = self:GetClientNumber( "admin" ),
+			superadmin = self:GetClientNumber( "superadmin" ),
+			bot = self:GetClientNumber( "bot" ),
 			npc = self:GetClientNumber( "npc" ),
 			ent = self:GetClientNumber( "ent" ),
 			removeprops = self:GetClientNumber( "removeprops" ),
@@ -180,26 +167,7 @@ function TOOL:Think()
 		
 		undo.Create( "ZoneEdit" )
 			undo.AddFunction( function( tab, zone )
-				ZoneManager.CreateZone( zone.id, {
-					id = zone.id,
-					point1 = zone.point1,
-					point2 = zone.point2,
-					wireframe = zone.wireframe,
-					player = zone.player,
-					admin = zone.admin,
-					npc = zone.npc,
-					ent = zone.ent,
-					removeprops = zone.removeprops,
-					tick = zone.tick,
-					amount = zone.amount,
-					limit = zone.limit,
-					type = zone.type,
-					shape = zone.shape,
-					r = zone.r,
-					g = zone.g,
-					b = zone.b,
-					a = zone.a
-				} )
+				ZoneManager.CreateZone( zone.id, zone )
 			end, zone )
 			undo.SetPlayer( owner )
 		undo.Finish()
@@ -245,7 +213,7 @@ if ( CLIENT ) then
 	language.Add( "zone.option.type.label", "Type:" )
 	language.Add( "zone.option.type.damage", "Damage" )
 	language.Add( "zone.option.type.heal", "Heal" )
-	language.Add( "zone.option.type.safe", "Safe" )
+	language.Add( "zone.option.type.scale", "Scale" )
 	language.Add( "zone.option.type.useless", "Useless" )
 	language.Add( "zone.option.shape.label", "Shape:" )
 	language.Add( "zone.option.shape.box", "Box" )
@@ -256,22 +224,30 @@ if ( CLIENT ) then
 	language.Add( "zone.option.tick.help", "How often the zone will affect health. The tick interval is measured in seconds." )
 	language.Add( "zone.option.damage_amount", "Damage Amount:" )
 	language.Add( "zone.option.heal_amount", "Heal Amount:" )
+	language.Add( "zone.option.damage_scale.label", "Damage Scale:" )
+	language.Add( "zone.option.damage_scale.help", "What percent of taken damage should be applied to the entity. Set to 0 for no damage. Set to 1 for normal damage amount." )
 	language.Add( "zone.option.min_health", "Min Health:" )
 	language.Add( "zone.option.max_health", "Max Health:" )
 	language.Add( "zone.option.limit.help", "How much health the entity will have when the zone stops affecting it. Set to 0 for no limit." )
 	language.Add( "zone.option.more", "More Options:" )
 	language.Add( "zone.option.damage_players", "Damage Players" )
 	language.Add( "zone.option.damage_admins", "Damage Admins" )
+	language.Add( "zone.option.damage_superadmins", "Damage Superadmins" )
+	language.Add( "zone.option.damage_bots", "Damage Bots" )
 	language.Add( "zone.option.damage_npcs", "Damage NPCs" )
 	language.Add( "zone.option.damage_entities", "Damage Entities" )
 	language.Add( "zone.option.heal_players", "Heal Players" )
 	language.Add( "zone.option.heal_admins", "Heal Admins" )
+	language.Add( "zone.option.heal_superadmins", "Heal Superadmins" )
+	language.Add( "zone.option.heal_bots", "Heal Bots" )
 	language.Add( "zone.option.heal_npcs", "Heal NPCs" )
 	language.Add( "zone.option.heal_entities", "Heal Entities" )
-	language.Add( "zone.option.protect_players", "Protect Players" )
-	language.Add( "zone.option.protect_admins", "Protect Admins" )
-	language.Add( "zone.option.protect_npcs", "Protect NPCs" )
-	language.Add( "zone.option.protect_entities", "Protect Entities" )
+	language.Add( "zone.option.scale_players", "Scale Players" )
+	language.Add( "zone.option.scale_admins", "Scale Admins" )
+	language.Add( "zone.option.scale_superadmins", "Scale Superadmins" )
+	language.Add( "zone.option.scale_bots", "Scale Bots" )
+	language.Add( "zone.option.scale_npcs", "Scale NPCs" )
+	language.Add( "zone.option.scale_entities", "Scale Entities" )
 	language.Add( "zone.option.remove_props", "Remove Props" )
 	language.Add( "zone.option.remove", "Remove this zone" )
 	
@@ -303,7 +279,7 @@ if ( CLIENT ) then
 		local type_combobox = CPanel:ComboBox( "#zone.option.type.label", "zone_type" )
 		type_combobox:AddChoice( "#zone.option.type.damage", TYPE_DAMAGE, type == TYPE_DAMAGE )
 		type_combobox:AddChoice( "#zone.option.type.heal", TYPE_HEAL, type == TYPE_HEAL )
-		type_combobox:AddChoice( "#zone.option.type.safe", TYPE_SAFE, type == TYPE_SAFE )
+		type_combobox:AddChoice( "#zone.option.type.scale", TYPE_SCALE, type == TYPE_SCALE )
 		type_combobox:AddChoice( "#zone.option.type.useless", TYPE_USELESS, type == TYPE_USELESS )
 		
 		-- Shape
@@ -331,6 +307,9 @@ if ( CLIENT ) then
 			CPanel:NumSlider( type == TYPE_DAMAGE and "#zone.option.damage_amount" or "#zone.option.heal_amount", "zone_amount", 1, 100, 0 )
 			CPanel:NumSlider( type == TYPE_DAMAGE and "#zone.option.min_health" or "#zone.option.max_health", "zone_limit", 0, 200, 0 )
 			CPanel:ControlHelp( "#zone.option.limit.help" )
+		elseif ( type == TYPE_SCALE ) then
+			CPanel:NumSlider( "#zone.option.damage_scale.label", "zone_amount", 0, 2, 2 )
+			CPanel:ControlHelp( "#zone.option.damage_scale.help" )
 		end
 		
 		CPanel:Help( "#zone.option.more" )
@@ -339,18 +318,24 @@ if ( CLIENT ) then
 		if type  == TYPE_DAMAGE then
 			CPanel:CheckBox( "#zone.option.damage_players", "zone_player" )
 			CPanel:CheckBox( "#zone.option.damage_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.damage_superadmins", "zone_superadmin" )
+			CPanel:CheckBox( "#zone.option.damage_bots", "zone_bot" )
 			CPanel:CheckBox( "#zone.option.damage_npcs", "zone_npc" )
 			CPanel:CheckBox( "#zone.option.damage_entities", "zone_ent" )
 		elseif type == TYPE_HEAL then
 			CPanel:CheckBox( "#zone.option.heal_players", "zone_player" )
 			CPanel:CheckBox( "#zone.option.heal_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.heal_superadmins", "zone_superadmin" )
+			CPanel:CheckBox( "#zone.option.heal_bots", "zone_bot" )
 			CPanel:CheckBox( "#zone.option.heal_npcs", "zone_npc" )
 			CPanel:CheckBox( "#zone.option.heal_entities", "zone_ent" )
-		elseif type == TYPE_SAFE then
-			CPanel:CheckBox( "#zone.option.protect_players", "zone_player" )
-			CPanel:CheckBox( "#zone.option.protect_admins", "zone_admin" )
-			CPanel:CheckBox( "#zone.option.protect_npcs", "zone_npc" )
-			CPanel:CheckBox( "#zone.option.protect_entities", "zone_ent" )
+		elseif type == TYPE_SCALE then
+			CPanel:CheckBox( "#zone.option.scale_players", "zone_player" )
+			CPanel:CheckBox( "#zone.option.scale_admins", "zone_admin" )
+			CPanel:CheckBox( "#zone.option.scale_superadmins", "zone_superadmin" )
+			CPanel:CheckBox( "#zone.option.scale_bots", "zone_bot" )
+			CPanel:CheckBox( "#zone.option.scale_npcs", "zone_npc" )
+			CPanel:CheckBox( "#zone.option.scale_entities", "zone_ent" )
 		end
 		
 		-- Remove Props
