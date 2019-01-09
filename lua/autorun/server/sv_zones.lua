@@ -25,7 +25,8 @@ local function affects( zone, ent )
 		( zone.superadmin && ent:IsPlayer() && ent:IsAdmin() && ent:IsSuperAdmin() ) ||
 		( zone.bot && ent:IsPlayer() && ent:IsBot() ) ||
 		( zone.npc && ent:IsNPC() ) ||
-		( zone.ent && not ent:IsPlayer() && not ent:IsNPC() ) )
+		( zone.ent && not ent:IsPlayer() && not ent:IsNPC() ) ||
+		( ent:IsPlayer() && table.HasValue( zone.groups, ent:GetNWString( "usergroup" ) ) ) )
 end
 
 local function permission( ply )
@@ -70,6 +71,7 @@ hook.Add( "Initialize", "ProWolf's Zone Tool Data Intialization", function()
 					bot = tobool( zone.bot ) or false,
 					npc = tobool( zone.npc ) or false,
 					ent = tobool( zone.ent ) or false,
+					groups = util.JSONToTable( tostring( zone.groups ) ) or "[]",
 					removeprops = tobool( zone.removeprops ) or false,
 					tick = tonumber( zone.tick ) or 1,
 					amount = tonumber( zone.amount ) or 1,
@@ -143,6 +145,7 @@ function ZoneManager.CreateZone( identifier, data )
 		bot = tobool( data.bot ) or false,
 		npc = tobool( data.npc ) or false,
 		ent = tobool( data.ent ) or false,
+		groups = util.JSONToTable( tostring( zone.groups ) ) or "[]",
 		removeprops = tobool( data.removeprops ) or false,
 		tick = tonumber( data.tick ) or 1,
 		amount = tonumber( data.amount ) or 1,

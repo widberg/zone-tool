@@ -13,6 +13,7 @@ TOOL.ClientConVar[ "superadmin" ] = "0"
 TOOL.ClientConVar[ "bot" ] = "0"
 TOOL.ClientConVar[ "npc" ] = "0"
 TOOL.ClientConVar[ "ent" ] = "0"
+TOOL.ClientConVar[ "groups" ] = "[]"
 TOOL.ClientConVar[ "removeprops" ] = "0"
 TOOL.ClientConVar[ "tick" ] = 1
 TOOL.ClientConVar[ "amount" ] = 1
@@ -93,6 +94,7 @@ function TOOL:Reload( tr )
 		bot = self:GetClientNumber( "bot" ),
 		npc = self:GetClientNumber( "npc" ),
 		ent = self:GetClientNumber( "ent" ),
+		groups = util.JSONToTable(self:GetClientInfo( "groups" )),
 		removeprops = self:GetClientNumber( "removeprops" ),
 		tick = self:GetClientNumber( "tick" ),
 		amount = self:GetClientNumber( "amount" ),
@@ -153,10 +155,11 @@ function TOOL:Think()
 			bot = self:GetClientNumber( "bot" ),
 			npc = self:GetClientNumber( "npc" ),
 			ent = self:GetClientNumber( "ent" ),
+			list = util.JSONToTable(self:GetClientInfo( "groups" )),
 			removeprops = self:GetClientNumber( "removeprops" ),
 			tick = self:GetClientNumber( "tick" ),
 			amount = self:GetClientNumber( "amount" ),
-			limit = self:GetClientNumber( "limit" ),
+			groups = self:GetClientNumber( "limit" ),
 			type = self:GetClientNumber( "type" ),
 			shape = self:GetClientNumber( "shape" ),
 			r = self:GetClientNumber( "red" ),
@@ -229,25 +232,30 @@ if ( CLIENT ) then
 	language.Add( "zone.option.min_health", "Min Health:" )
 	language.Add( "zone.option.max_health", "Max Health:" )
 	language.Add( "zone.option.limit.help", "How much health the entity will have when the zone stops affecting it. Set to 0 for no limit." )
-	language.Add( "zone.option.more", "More Options:" )
+	language.Add( "zone.option.groups.label", "Groups:" )
+	language.Add( "zone.option.groups.help", "Add a user group to affect using the text box. Click a group in the list to remove it." )
 	language.Add( "zone.option.damage_players", "Damage Players" )
 	language.Add( "zone.option.damage_admins", "Damage Admins" )
 	language.Add( "zone.option.damage_superadmins", "Damage Superadmins" )
 	language.Add( "zone.option.damage_bots", "Damage Bots" )
 	language.Add( "zone.option.damage_npcs", "Damage NPCs" )
 	language.Add( "zone.option.damage_entities", "Damage Entities" )
+	language.Add( "zone.option.damage_groups", "Damage User Groups" )
 	language.Add( "zone.option.heal_players", "Heal Players" )
 	language.Add( "zone.option.heal_admins", "Heal Admins" )
 	language.Add( "zone.option.heal_superadmins", "Heal Superadmins" )
 	language.Add( "zone.option.heal_bots", "Heal Bots" )
 	language.Add( "zone.option.heal_npcs", "Heal NPCs" )
 	language.Add( "zone.option.heal_entities", "Heal Entities" )
+	language.Add( "zone.option.heal_groups", "Heal User Groups" )
 	language.Add( "zone.option.scale_players", "Scale Players" )
 	language.Add( "zone.option.scale_admins", "Scale Admins" )
 	language.Add( "zone.option.scale_superadmins", "Scale Superadmins" )
 	language.Add( "zone.option.scale_bots", "Scale Bots" )
 	language.Add( "zone.option.scale_npcs", "Scale NPCs" )
 	language.Add( "zone.option.scale_entities", "Scale Entities" )
+	language.Add( "zone.option.scale_groups", "Scale User Groups" )
+	language.Add( "zone.option.more", "More Options:" )
 	language.Add( "zone.option.remove_props", "Remove Props" )
 	language.Add( "zone.option.remove", "Remove this zone" )
 	
@@ -256,7 +264,7 @@ if ( CLIENT ) then
 	language.Add( "Undone_ZoneRemove", "Undone Zone Remove" )
 
 	local function AddDefControls( CPanel )
-		CPanel:ClearControls()
+		CPanel:Clear()
 		
 		-- Header
 		CPanel:Help( "#zone.option.description" )
@@ -312,9 +320,12 @@ if ( CLIENT ) then
 			CPanel:ControlHelp( "#zone.option.damage_scale.help" )
 		end
 		
-		CPanel:Help( "#zone.option.more" )
+		CPanel:Help( "#zone.option.groups.label" )
 		
 		-- Groups
+		local groups_list = vgui.Create( "DListEdit", CPanel )
+		groups_list:SetConVar( "zone_groups" )
+		
 		if type  == TYPE_DAMAGE then
 			CPanel:CheckBox( "#zone.option.damage_players", "zone_player" )
 			CPanel:CheckBox( "#zone.option.damage_admins", "zone_admin" )
@@ -322,6 +333,7 @@ if ( CLIENT ) then
 			CPanel:CheckBox( "#zone.option.damage_bots", "zone_bot" )
 			CPanel:CheckBox( "#zone.option.damage_npcs", "zone_npc" )
 			CPanel:CheckBox( "#zone.option.damage_entities", "zone_ent" )
+			groups_list:SetLabel( "#zone.option.damage_groups" )
 		elseif type == TYPE_HEAL then
 			CPanel:CheckBox( "#zone.option.heal_players", "zone_player" )
 			CPanel:CheckBox( "#zone.option.heal_admins", "zone_admin" )
@@ -329,6 +341,7 @@ if ( CLIENT ) then
 			CPanel:CheckBox( "#zone.option.heal_bots", "zone_bot" )
 			CPanel:CheckBox( "#zone.option.heal_npcs", "zone_npc" )
 			CPanel:CheckBox( "#zone.option.heal_entities", "zone_ent" )
+			groups_list:SetLabel( "#zone.option.heal_groups" )
 		elseif type == TYPE_SCALE then
 			CPanel:CheckBox( "#zone.option.scale_players", "zone_player" )
 			CPanel:CheckBox( "#zone.option.scale_admins", "zone_admin" )
@@ -336,7 +349,13 @@ if ( CLIENT ) then
 			CPanel:CheckBox( "#zone.option.scale_bots", "zone_bot" )
 			CPanel:CheckBox( "#zone.option.scale_npcs", "zone_npc" )
 			CPanel:CheckBox( "#zone.option.scale_entities", "zone_ent" )
+			groups_list:SetLabel( "#zone.option.scale_groups" )
 		end
+		
+		CPanel:AddItem( groups_list )
+		CPanel:ControlHelp( "#zone.option.groups.help" )
+		
+		CPanel:Help( "#zone.option.more" )
 		
 		-- Remove Props
 		CPanel:CheckBox( "#zone.option.remove_props", "zone_removeprops" )
