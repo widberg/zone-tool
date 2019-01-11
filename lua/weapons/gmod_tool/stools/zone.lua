@@ -94,7 +94,7 @@ function TOOL:Reload( tr )
 		bot = self:GetClientNumber( "bot" ),
 		npc = self:GetClientNumber( "npc" ),
 		ent = self:GetClientNumber( "ent" ),
-		groups = util.JSONToTable(self:GetClientInfo( "groups" )),
+		groups = util.JSONToTable( self:GetClientInfo( "groups" ):gsub("'", "\"") ),
 		removeprops = self:GetClientNumber( "removeprops" ),
 		tick = self:GetClientNumber( "tick" ),
 		amount = self:GetClientNumber( "amount" ),
@@ -143,7 +143,7 @@ function TOOL:Think()
 
 	if ( owner:KeyDown(IN_USE) && self.NextUse <= CurTime() ) then
 		if ( zone == nil ) then owner:PrintMessage( HUD_PRINTCENTER, "#zone.error.exist" ) return false end
-
+		
 		ZoneManager.CreateZone( zone.id, {
 			id = zone.id,
 			point1 = zone.point1,
@@ -155,11 +155,11 @@ function TOOL:Think()
 			bot = self:GetClientNumber( "bot" ),
 			npc = self:GetClientNumber( "npc" ),
 			ent = self:GetClientNumber( "ent" ),
-			list = util.JSONToTable(self:GetClientInfo( "groups" )),
+			groups = util.JSONToTable( self:GetClientInfo( "groups" ):gsub("'", "\"") ),
 			removeprops = self:GetClientNumber( "removeprops" ),
 			tick = self:GetClientNumber( "tick" ),
 			amount = self:GetClientNumber( "amount" ),
-			groups = self:GetClientNumber( "limit" ),
+			limit = self:GetClientNumber( "limit" ),
 			type = self:GetClientNumber( "type" ),
 			shape = self:GetClientNumber( "shape" ),
 			r = self:GetClientNumber( "red" ),
@@ -323,37 +323,39 @@ if ( CLIENT ) then
 		CPanel:Help( "#zone.option.groups.label" )
 		
 		-- Groups
-		local groups_list = vgui.Create( "DListEdit", CPanel )
-		groups_list:SetConVar( "zone_groups" )
-		
-		if type  == TYPE_DAMAGE then
-			CPanel:CheckBox( "#zone.option.damage_players", "zone_player" )
-			CPanel:CheckBox( "#zone.option.damage_admins", "zone_admin" )
-			CPanel:CheckBox( "#zone.option.damage_superadmins", "zone_superadmin" )
-			CPanel:CheckBox( "#zone.option.damage_bots", "zone_bot" )
-			CPanel:CheckBox( "#zone.option.damage_npcs", "zone_npc" )
-			CPanel:CheckBox( "#zone.option.damage_entities", "zone_ent" )
-			groups_list:SetLabel( "#zone.option.damage_groups" )
-		elseif type == TYPE_HEAL then
-			CPanel:CheckBox( "#zone.option.heal_players", "zone_player" )
-			CPanel:CheckBox( "#zone.option.heal_admins", "zone_admin" )
-			CPanel:CheckBox( "#zone.option.heal_superadmins", "zone_superadmin" )
-			CPanel:CheckBox( "#zone.option.heal_bots", "zone_bot" )
-			CPanel:CheckBox( "#zone.option.heal_npcs", "zone_npc" )
-			CPanel:CheckBox( "#zone.option.heal_entities", "zone_ent" )
-			groups_list:SetLabel( "#zone.option.heal_groups" )
-		elseif type == TYPE_SCALE then
-			CPanel:CheckBox( "#zone.option.scale_players", "zone_player" )
-			CPanel:CheckBox( "#zone.option.scale_admins", "zone_admin" )
-			CPanel:CheckBox( "#zone.option.scale_superadmins", "zone_superadmin" )
-			CPanel:CheckBox( "#zone.option.scale_bots", "zone_bot" )
-			CPanel:CheckBox( "#zone.option.scale_npcs", "zone_npc" )
-			CPanel:CheckBox( "#zone.option.scale_entities", "zone_ent" )
-			groups_list:SetLabel( "#zone.option.scale_groups" )
+		if ( type == TYPE_DAMAGE || type == TYPE_HEAL || type == TYPE_SCALE ) then
+			local groups_list = vgui.Create( "DListEdit", CPanel )
+			groups_list:SetConVar( "zone_groups" )
+			
+			if type  == TYPE_DAMAGE then
+				CPanel:CheckBox( "#zone.option.damage_players", "zone_player" )
+				CPanel:CheckBox( "#zone.option.damage_admins", "zone_admin" )
+				CPanel:CheckBox( "#zone.option.damage_superadmins", "zone_superadmin" )
+				CPanel:CheckBox( "#zone.option.damage_bots", "zone_bot" )
+				CPanel:CheckBox( "#zone.option.damage_npcs", "zone_npc" )
+				CPanel:CheckBox( "#zone.option.damage_entities", "zone_ent" )
+				groups_list:SetLabel( "#zone.option.damage_groups" )
+			elseif type == TYPE_HEAL then
+				CPanel:CheckBox( "#zone.option.heal_players", "zone_player" )
+				CPanel:CheckBox( "#zone.option.heal_admins", "zone_admin" )
+				CPanel:CheckBox( "#zone.option.heal_superadmins", "zone_superadmin" )
+				CPanel:CheckBox( "#zone.option.heal_bots", "zone_bot" )
+				CPanel:CheckBox( "#zone.option.heal_npcs", "zone_npc" )
+				CPanel:CheckBox( "#zone.option.heal_entities", "zone_ent" )
+				groups_list:SetLabel( "#zone.option.heal_groups" )
+			elseif type == TYPE_SCALE then
+				CPanel:CheckBox( "#zone.option.scale_players", "zone_player" )
+				CPanel:CheckBox( "#zone.option.scale_admins", "zone_admin" )
+				CPanel:CheckBox( "#zone.option.scale_superadmins", "zone_superadmin" )
+				CPanel:CheckBox( "#zone.option.scale_bots", "zone_bot" )
+				CPanel:CheckBox( "#zone.option.scale_npcs", "zone_npc" )
+				CPanel:CheckBox( "#zone.option.scale_entities", "zone_ent" )
+				groups_list:SetLabel( "#zone.option.scale_groups" )
+			end
+			
+			CPanel:AddItem( groups_list )
+			CPanel:ControlHelp( "#zone.option.groups.help" )
 		end
-		
-		CPanel:AddItem( groups_list )
-		CPanel:ControlHelp( "#zone.option.groups.help" )
 		
 		CPanel:Help( "#zone.option.more" )
 		
